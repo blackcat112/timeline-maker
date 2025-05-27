@@ -80,16 +80,22 @@ def mapStakeholder(row, custom_weights=None):
 # ----------- INTERFAZ DE USUARIO -------------
 with st.sidebar:
     st.subheader("Filtrar por mes/fase")
+    # Añade la opción 'All' al principio
+    months_labels_all = ['All'] + months_labels
+    months_sorted_all = [None] + months_sorted  # None representará 'All'
     mes_idx = st.radio(
         "Elige un mes para ver los eventos y focos estratégicos:",
-        options=list(range(len(months_labels))),
-        format_func=lambda i: months_labels[i]
+        options=list(range(len(months_labels_all))),
+        format_func=lambda i: months_labels_all[i]
     )
-    filtro_mes = months_sorted[mes_idx]
+    filtro_mes = months_sorted_all[mes_idx]
+    selected_month_label = months_labels_all[mes_idx]
 
 # ----------- FILTRO POR MES ------------------
-df_mes = df[df['Month'] == filtro_mes].copy()
-
+if filtro_mes is None:
+    df_mes = df.copy()  # Sin filtro, muestra todo
+else:
+    df_mes = df[df['Month'] == filtro_mes].copy()
 
 color_map = {
     'Target': '#2563eb',
@@ -184,35 +190,50 @@ for lane in swimlanes:
             hoverinfo='skip'
         ))
 
-        bar_width = (p['end'] - p['start']).total_seconds()
+        bar_width_seconds = (p['end'] - p['start']).total_seconds()
         text = p['name']
         char_count = len(text)
-        x_unit_to_px = 30  # ajusta según tu escala
+        x_unit_to_px = 30  # puedes ajustar este valor
         font_size_max = 12
         text_width_est = char_count * font_size_max * 0.6
-        bar_width_px = bar_width * x_unit_to_px
+        bar_width_px = bar_width_seconds * x_unit_to_px
 
+        # Si el texto es más largo que la barra, parte en dos líneas (por palabras)
         if text_width_est > bar_width_px:
+            # Partimos por la mitad (idealmente por palabras)
+            words = text.split()
+            if len(words) > 1:
+                mid = len(words) // 2
+                line1 = ' '.join(words[:mid])
+                line2 = ' '.join(words[mid:])
+                phase_label = f"<b>{line1}<br>{line2}</b>"
+            else:
+                phase_label = f"<b>{text}</b>"
+            # Reduce el tamaño de fuente si sigue siendo muy largo
             font_size = max(8, int(bar_width_px / (char_count * 0.6)))
         else:
+            phase_label = f"<b>{text}</b>"
             font_size = font_size_max
 
         xtext = p['start'] + (p['end'] - p['start']) / 2
+
+        # Sombra para mejorar contraste
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (1,1), (-1,1), (1,-1)]:
             fig.add_annotation(
                 x=xtext,
                 y=ypos + dy * 0.01,
-                text=f"<b>{p['name']}</b>",
+                text=phase_label,
                 showarrow=False,
                 font=dict(size=font_size, color="#000", family="Montserrat, Arial"),
                 xanchor="center", yanchor="middle",
                 align="center",
                 opacity=1,
             )
+        # Etiqueta principal, encima de la barra, en blanco
         fig.add_annotation(
             x=xtext,
             y=ypos,
-            text=f"<b>{p['name']}</b>",
+            text=phase_label,
             showarrow=False,
             font=dict(size=font_size, color="#f1f5f9", family="Montserrat, Arial"),
             xanchor="center", yanchor="middle",
@@ -281,7 +302,6 @@ for lane in swimlanes:
                 )
             ))
 
-
 # Leyenda de eventos
 for event, color in color_map.items():
     fig.add_trace(go.Scatter(
@@ -341,57 +361,55 @@ fig.update_layout(
     height=720,
 )
 
-
-# ... [todo tu código anterior, igual] ...
-
 with st.container():
     c1, c2 = st.columns([2,1.8])  # Radar más ancho, panel derecho
 
     with c1:
-        st.subheader(f"Swimlane timeline — {months_labels[mes_idx]}")
+        st.subheader(f"Swimlane timeline — {selected_month_label}")
         st.plotly_chart(fig, use_container_width=True)
 
-   # ... [todo tu código anterior, igual, hasta la columna c2] ...
+    with c2:
+        st.subheader(f"Stakeholder Involvement — {selected_month_label}")
 
-with c2:
-    st.subheader(f"Stakeholder Involvement — {months_labels[mes_idx]}")
+        # -------- Botones de configuración arriba --------
+        config_col1, config_col2 = st.columns([0.50, 0.50])
+        if "show_config_panel" not in st.session_state:
+            st.session_state["show_config_panel"] = False
+        if "show_config_foco" not in st.session_state:
+            st.session_state["show_config_foco"] = False
+        with config_col1:
+            if st.button("⚙️ Stakeholders", key="open_config_panel", help="Editar pesos de stakeholders"):
+                st.session_state["show_config_panel"] = True
+        with config_col2:
+            if st.button("⚙️ Foco estratégico", key="open_config_foco", help="Editar pesos de foco estratégico"):
+                st.session_state["show_config_foco"] = True
 
-    # Botones de configuración
-    if "show_config_panel" not in st.session_state:
-        st.session_state["show_config_panel"] = False
-    if "show_config_foco" not in st.session_state:
-        st.session_state["show_config_foco"] = False
+        # --------- Checkbox pequeño para mostrar/ocultar leyenda -----------
+        legend_key = "show_legend_radar"
+        if legend_key not in st.session_state:
+            st.session_state[legend_key] = False
 
-    config_col1, config_col2 = st.columns([0.50, 0.50])
-    with config_col1:
-        if st.button("⚙️ Stakeholders", key="open_config_panel", help="Editar pesos de stakeholders"):
-            st.session_state["show_config_panel"] = True
-    with config_col2:
-        if st.button("⚙️ Foco estratégico", key="open_config_foco", help="Editar pesos de foco estratégico"):
-            st.session_state["show_config_foco"] = True
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stCheckbox"] label {
+                font-size: 10px !important;
+                margin-bottom: -8px !important;
+                margin-top: -8px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        show_legend = st.checkbox("Mostrar leyenda", value=st.session_state[legend_key], key=legend_key)
 
-    # Panel de edición de Stakeholders
-    if st.session_state["show_config_panel"]:
-        st.markdown("---")
-        st.markdown("#### Configuración de pesos de stakeholders")
-        if 'custom_weights' not in st.session_state:
-            st.session_state['custom_weights'] = {}
+        # ----------------- Radar chart -----------------
+        radar_traces = []
+        colores = ["#f59e42","#eab308","#0284c7","#22d3ee","#22c55e","#e11d48","#7c3aed"]
         grupos = df_mes.groupby('Row ID')
-        eventos_lista = []
-        for gid, g in grupos:
-            nombre = gid[:35] + ("..." if len(gid)>35 else "")
-            eventos_lista.append(nombre)
-        selected_g = st.selectbox("Selecciona un evento para editar stakeholders", options=[''] + eventos_lista, key="config_select_event")
-        selected_gid = None
-        if selected_g != '':
-            for gid in grupos.groups.keys():
-                if selected_g == gid[:35] + ("..." if len(gid)>35 else ""):
-                    selected_gid = gid
-                    break
-        if selected_gid is not None:
-            g = grupos.get_group(selected_gid)
-            if selected_gid in st.session_state['custom_weights']:
-                current_vals = st.session_state['custom_weights'][selected_gid]
+        for i, (gid, g) in enumerate(grupos):
+            if gid in st.session_state.get('custom_weights', {}):
+                vals = st.session_state['custom_weights'][gid]
             else:
                 vals = [0,0,0,0,0]
                 for _, row in g.iterrows():
@@ -399,145 +417,159 @@ with c2:
                     vals = [x + y for x,y in zip(vals, st_vals)]
                 n = len(g)
                 if n: vals = [v/n for v in vals]
-                current_vals = vals
-            with st.form(f"edit_{selected_gid}"):
-                st.write("Ajusta la relevancia de cada stakeholder para este evento:")
-                new_vals = []
-                for i, role in enumerate(stakeholder_roles):
-                    new_vals.append(st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{selected_gid}_{role}_config"))
+            radar_traces.append(go.Scatterpolar(
+                r = vals + [vals[0]],
+                theta = stakeholder_roles + [stakeholder_roles[0]],
+                fill = 'toself',
+                name = gid[:35] + ("..." if len(gid)>35 else ""),
+                line=dict(color=colores[i%len(colores)], width=3),
+                opacity=0.7,
+                visible=True
+            ))
+
+        radar_layout = go.Layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0,1.1], color="#1e293b")),
+            showlegend=show_legend,  # Control dinámico de la leyenda
+            legend=dict(
+                font=dict(family='Montserrat', size=8, color="#1e293b"),
+                x=0.99, y=0.01, xanchor='right', yanchor='bottom',
+                bordercolor='#e5e7eb', borderwidth=1, bgcolor='#fff',
+                orientation='v',
+                itemclick='toggle',
+                itemdoubleclick='toggleothers'
+            ),
+            font=dict(color="#1e293b"),
+            height=340,
+            width=420,
+            margin=dict(t=14, l=10, r=10, b=13),
+            paper_bgcolor="#fff",
+            plot_bgcolor="#fff"
+        )
+
+        plot_config = {
+            "displayModeBar": True,
+            "displaylogo": False,
+            "toImageButtonOptions": {
+                "format": "png",
+                "filename": "stakeholder_radar",
+                "height": 600,
+                "width": 800,
+                "scale": 3
+            },
+            "showTips": True,
+            "showEditInChartStudio": False,
+            "modeBarButtonsToAdd": ["togglelegend"],
+            "modeBarButtonsToRemove": [],
+            "responsive": True,
+            "showlegendonfullscreen": True
+        }
+
+        st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
+
+        # -------------- Panel de edición de Stakeholders -------------
+        if st.session_state["show_config_panel"]:
+            st.markdown("---")
+            st.markdown("#### Configuración de pesos de stakeholders")
+            if 'custom_weights' not in st.session_state:
+                st.session_state['custom_weights'] = {}
+            grupos = df_mes.groupby('Row ID')
+            eventos_lista = []
+            for gid, g in grupos:
+                nombre = gid[:35] + ("..." if len(gid)>35 else "")
+                eventos_lista.append(nombre)
+            selected_g = st.selectbox("Selecciona un evento para editar stakeholders", options=[''] + eventos_lista, key="config_select_event")
+            selected_gid = None
+            if selected_g != '':
+                for gid in grupos.groups.keys():
+                    if selected_g == gid[:35] + ("..." if len(gid)>35 else ""):
+                        selected_gid = gid
+                        break
+            if selected_gid is not None:
+                g = grupos.get_group(selected_gid)
+                if selected_gid in st.session_state['custom_weights']:
+                    current_vals = st.session_state['custom_weights'][selected_gid]
+                else:
+                    vals = [0,0,0,0,0]
+                    for _, row in g.iterrows():
+                        st_vals = mapStakeholder(row)
+                        vals = [x + y for x,y in zip(vals, st_vals)]
+                    n = len(g)
+                    if n: vals = [v/n for v in vals]
+                    current_vals = vals
+                with st.form(f"edit_{selected_gid}"):
+                    st.write("Ajusta la relevancia de cada stakeholder para este evento:")
+                    new_vals = []
+                    for i, role in enumerate(stakeholder_roles):
+                        new_vals.append(st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{selected_gid}_{role}_config"))
+                    col_save, col_close = st.columns([0.5,0.5])
+                    with col_save:
+                        submit = st.form_submit_button("Guardar cambios")
+                    with col_close:
+                        close_panel = st.form_submit_button("Cerrar")
+                    if submit:
+                        st.session_state['custom_weights'][selected_gid] = new_vals
+                        st.success("¡Pesos actualizados para este evento!")
+                    if close_panel:
+                        st.session_state["show_config_panel"] = False
+            else:
+                if st.button("Cerrar", key="cerrar_sin_seleccion"):
+                    st.session_state["show_config_panel"] = False
+
+        # -------------- Panel de edición de Foco estratégico -------------
+        if st.session_state["show_config_foco"]:
+            st.markdown("---")
+            st.markdown("#### Configuración de pesos de foco estratégico")
+            if 'custom_foco' not in st.session_state:
+                # Inicializamos los valores actuales con los reales para el mes
+                df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
+                fases = ['Desarrollo', 'Implementación', 'Adopción']
+                pesos_actuales = df_mes['Macro Fase'].value_counts(normalize=True).reindex(fases, fill_value=0).values.tolist()
+                st.session_state['custom_foco'] = pesos_actuales
+            # Editar los pesos con sliders
+            with st.form("edit_foco_estrategico"):
+                new_foco_vals = []
+                fases = ['Desarrollo', 'Implementación', 'Adopción']
+                total = sum(st.session_state['custom_foco'])
+                st.write("Ajusta el peso relativo de cada foco estratégico (los valores deben sumar 1):")
+                for i, fase in enumerate(fases):
+                    new_foco_vals.append(
+                        st.slider(fase, min_value=0.0, max_value=1.0, step=0.01, value=float(st.session_state['custom_foco'][i]), key=f"foco_{fase}")
+                    )
+                # Normalizar para que sumen exactamente 1
+                sum_vals = sum(new_foco_vals)
+                if sum_vals != 0:
+                    new_foco_vals = [v / sum_vals for v in new_foco_vals]
                 col_save, col_close = st.columns([0.5,0.5])
                 with col_save:
-                    submit = st.form_submit_button("Guardar cambios")
+                    submit_foco = st.form_submit_button("Guardar cambios")
                 with col_close:
-                    close_panel = st.form_submit_button("Cerrar")
-                if submit:
-                    st.session_state['custom_weights'][selected_gid] = new_vals
-                    st.success("¡Pesos actualizados para este evento!")
-                if close_panel:
-                    st.session_state["show_config_panel"] = False
-        else:
-            if st.button("Cerrar", key="cerrar_sin_seleccion"):
-                st.session_state["show_config_panel"] = False
+                    close_foco = st.form_submit_button("Cerrar")
+                if submit_foco:
+                    st.session_state['custom_foco'] = new_foco_vals
+                    st.success("¡Pesos actualizados para foco estratégico!")
+                if close_foco:
+                    st.session_state["show_config_foco"] = False
 
-    # Panel de edición de Foco estratégico
-    if st.session_state["show_config_foco"]:
-        st.markdown("---")
-        st.markdown("#### Configuración de pesos de foco estratégico")
-        if 'custom_foco' not in st.session_state:
-            # Inicializamos los valores actuales con los reales para el mes
-            df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
-            fases = ['Desarrollo', 'Implementación', 'Adopción']
-            pesos_actuales = df_mes['Macro Fase'].value_counts(normalize=True).reindex(fases, fill_value=0).values.tolist()
-            st.session_state['custom_foco'] = pesos_actuales
-        # Editar los pesos con sliders
-        with st.form("edit_foco_estrategico"):
-            new_foco_vals = []
-            fases = ['Desarrollo', 'Implementación', 'Adopción']
-            total = sum(st.session_state['custom_foco'])
-            st.write("Ajusta el peso relativo de cada foco estratégico (los valores deben sumar 1):")
-            for i, fase in enumerate(fases):
-                new_foco_vals.append(
-                    st.slider(fase, min_value=0.0, max_value=1.0, step=0.01, value=float(st.session_state['custom_foco'][i]), key=f"foco_{fase}")
+        # Bar chart foco estratégico
+        st.subheader(f"Foco estratégico — {selected_month_label}")
+        df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
+        fases = ['Desarrollo', 'Implementación', 'Adopción']
+        if 'custom_foco' in st.session_state:
+            pesos = pd.Series(st.session_state['custom_foco'], index=fases)
+        else:
+            pesos = df_mes['Macro Fase'].value_counts(normalize=True).reindex(fases, fill_value=0)
+        if pesos.sum() > 0:
+            st.plotly_chart(go.Figure(
+                data=[go.Bar(x=pesos.index, y=pesos.values, marker_color=['#277da1', '#43aa8b', '#f3722c'][:len(pesos)])],
+                layout=go.Layout(
+                    yaxis=dict(title="Peso relativo", range=[0,1]),
+                    xaxis=dict(title=""),
+                    height=320,
+                    margin=dict(t=30, l=20, r=20, b=40)
                 )
-            # Normalizar para que sumen exactamente 1
-            sum_vals = sum(new_foco_vals)
-            if sum_vals != 0:
-                new_foco_vals = [v / sum_vals for v in new_foco_vals]
-            col_save, col_close = st.columns([0.5,0.5])
-            with col_save:
-                submit_foco = st.form_submit_button("Guardar cambios")
-            with col_close:
-                close_foco = st.form_submit_button("Cerrar")
-            if submit_foco:
-                st.session_state['custom_foco'] = new_foco_vals
-                st.success("¡Pesos actualizados para foco estratégico!")
-            if close_foco:
-                st.session_state["show_config_foco"] = False
-
-    # Radar chart
-    radar_traces = []
-    colores = ["#f59e42","#eab308","#0284c7","#22d3ee","#22c55e","#e11d48","#7c3aed"]
-    grupos = df_mes.groupby('Row ID')
-    for i, (gid, g) in enumerate(grupos):
-        if gid in st.session_state.get('custom_weights', {}):
-            vals = st.session_state['custom_weights'][gid]
+            ), use_container_width=True)
         else:
-            vals = [0,0,0,0,0]
-            for _, row in g.iterrows():
-                st_vals = mapStakeholder(row)
-                vals = [x + y for x,y in zip(vals, st_vals)]
-            n = len(g)
-            if n: vals = [v/n for v in vals]
-        radar_traces.append(go.Scatterpolar(
-            r = vals + [vals[0]],
-            theta = stakeholder_roles + [stakeholder_roles[0]],
-            fill = 'toself',
-            name = gid[:35] + ("..." if len(gid)>35 else ""),
-            line=dict(color=colores[i%len(colores)], width=3),
-            opacity=0.7,
-            visible=True
-        ))
-
-    radar_layout = go.Layout(
-    polar=dict(radialaxis=dict(visible=True, range=[0,1.1], color="#1e293b")),
-    showlegend=True,  # SIEMPRE visible
-    legend=dict(
-        font=dict(family='Montserrat', size=8, color="#1e293b"),
-        x=0.99, y=0.01, xanchor='right', yanchor='bottom',
-        bordercolor='#e5e7eb', borderwidth=1, bgcolor='#fff',
-        orientation='v',
-        itemclick='toggle',
-        itemdoubleclick='toggleothers'
-    ),
-    font=dict(color="#1e293b"),
-    height=340,
-    width=420,
-    margin=dict(t=14, l=10, r=10, b=13),
-    paper_bgcolor="#fff",
-    plot_bgcolor="#fff"
-)
-
-    plot_config = {
-        "displayModeBar": True,
-        "displaylogo": False,
-        "toImageButtonOptions": {
-            "format": "png",
-            "filename": "stakeholder_radar",
-            "height": 600,
-            "width": 800,
-            "scale": 3
-        },
-        "showTips": True,
-        "showEditInChartStudio": False,
-        "modeBarButtonsToAdd": ["toggleSpikelines"],
-        "modeBarButtonsToRemove": [],
-        "responsive": True,
-        "showlegend": False,
-        "showlegendonfullscreen": True
-    }
-
-    st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
-
-    # Bar chart foco estratégico
-    st.subheader(f"Foco estratégico — {months_labels[mes_idx]}")
-    df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
-    fases = ['Desarrollo', 'Implementación', 'Adopción']
-    if 'custom_foco' in st.session_state:
-        pesos = pd.Series(st.session_state['custom_foco'], index=fases)
-    else:
-        pesos = df_mes['Macro Fase'].value_counts(normalize=True).reindex(fases, fill_value=0)
-    if pesos.sum() > 0:
-        st.plotly_chart(go.Figure(
-            data=[go.Bar(x=pesos.index, y=pesos.values, marker_color=['#277da1', '#43aa8b', '#f3722c'][:len(pesos)])],
-            layout=go.Layout(
-                yaxis=dict(title="Peso relativo", range=[0,1]),
-                xaxis=dict(title=""),
-                height=320,
-                margin=dict(t=30, l=20, r=20, b=40)
-            )
-        ), use_container_width=True)
-    else:
-        st.info("Sin datos de foco estratégico para este mes.")
+            st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de la derecha.")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de ...")
