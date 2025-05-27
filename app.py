@@ -29,9 +29,7 @@ months_labels = [d.strftime('%b %Y') for d in months_sorted]
 stakeholder_roles = ['Usuario', 'Prestador', 'Proveedor', 'Facilitador', 'Prescriptor']
 
 def macroFase(phase):
-    """Devuelve Desarrollo / Implementación / Adopción siempre."""
     phase = (phase or "").lower()
-    # Palabras clave para cada macrofase
     desarrollo_kw = [
         "development", "desarrollo", "service dev", "connector", "demo",
         "baselines", "module", "setup"
@@ -45,14 +43,12 @@ def macroFase(phase):
         "trial", "interest", "test", "readiness", "strategy", "willingness",
         "engagement", "client", "policy", "testing", "onboarding"
     ]
-    # Match por keyword
     if any(k in phase for k in desarrollo_kw):
         return "Desarrollo"
     if any(k in phase for k in implement_kw):
         return "Implementación"
     if any(k in phase for k in adopcion_kw):
         return "Adopción"
-    # Heurística: si nada hace match, por defecto “Desarrollo”
     return "Desarrollo"
 
 def mapStakeholder(row, custom_weights=None):
@@ -69,10 +65,8 @@ def mapStakeholder(row, custom_weights=None):
         v[0] += 0.7; v[4] += 0.5
     if pd.notnull(row['Events']) and "milestone" in row['Events'].lower():
         v = [x+0.3 for x in v]
-    # Normalizar
     maxv = max(v + [1])
     v = [x/maxv for x in v]
-    # Sobrescribir con valores personalizados si existen
     if custom_weights is not None:
         v = custom_weights
     return v
@@ -80,9 +74,8 @@ def mapStakeholder(row, custom_weights=None):
 # ----------- INTERFAZ DE USUARIO -------------
 with st.sidebar:
     st.subheader("Filtrar por mes/fase")
-    # Añade la opción 'All' al principio
     months_labels_all = ['All'] + months_labels
-    months_sorted_all = [None] + months_sorted  # None representará 'All'
+    months_sorted_all = [None] + months_sorted
     mes_idx = st.radio(
         "Elige un mes para ver los eventos y focos estratégicos:",
         options=list(range(len(months_labels_all))),
@@ -91,9 +84,8 @@ with st.sidebar:
     filtro_mes = months_sorted_all[mes_idx]
     selected_month_label = months_labels_all[mes_idx]
 
-# ----------- FILTRO POR MES ------------------
 if filtro_mes is None:
-    df_mes = df.copy()  # Sin filtro, muestra todo
+    df_mes = df.copy()
 else:
     df_mes = df[df['Month'] == filtro_mes].copy()
 
@@ -102,16 +94,16 @@ color_map = {
     'Milestone': '#22c55e',
     'Barrier': '#ef4444'
 }
-
 rgba_map = {
     'Target': 'rgba(37,99,235,0.68)',
     'Milestone': 'rgba(34,197,94,0.68)',
     'Barrier': 'rgba(239,68,68,0.68)'
 }
-
 swimlanes = ['User engagement', 'Logistics', 'Data economy']
-SWIMLANE_SPACING = 1.7
-PHASE_SLOT = 0.38
+
+# MÁS ESPACIO entre swimlanes y phases
+SWIMLANE_SPACING = 2.4  # antes 1.7
+PHASE_SLOT = 0.65       # antes 0.38
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
@@ -133,7 +125,6 @@ for lane, y in y_pos.items():
 for lane in swimlanes:
     sub = df_mes[df_mes['Swimlane'] == lane].copy()
     if sub.empty: continue
-    # Ordena las phases por start date
     phases = []
     for phase, phase_df in sub.groupby('Phase'):
         start = phase_df['Start Date'].min()
@@ -167,18 +158,18 @@ for lane in swimlanes:
             showlegend=False,
             hoverinfo='skip'
         ))
-        # Sombra de Phase para efecto visual elegante
+        # Sombra de Phase
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end']],
-            y=[ypos-0.06, ypos-0.06],
+            y=[ypos-0.09, ypos-0.09],
             mode='lines',
-            line=dict(color='#94a3b8', width=10, dash='dot', shape='spline'),
+            line=dict(color='#94a3b8', width=13, dash='dot', shape='spline'),
             showlegend=False,
             hoverinfo='skip',
             opacity=0.13
         ))
         # Barra phase más gruesa
-        BAR_HEIGHT = 0.23  # Hazlo más grueso para meter el texto
+        BAR_HEIGHT = 0.33  # Más grueso
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end'], p['end'], p['start'], p['start']],
             y=[ypos-BAR_HEIGHT, ypos-BAR_HEIGHT, ypos+BAR_HEIGHT, ypos+BAR_HEIGHT, ypos-BAR_HEIGHT],
@@ -193,14 +184,11 @@ for lane in swimlanes:
         bar_width_seconds = (p['end'] - p['start']).total_seconds()
         text = p['name']
         char_count = len(text)
-        x_unit_to_px = 30  # puedes ajustar este valor
-        font_size_max = 12
+        x_unit_to_px = 28
+        font_size_max = 13
         text_width_est = char_count * font_size_max * 0.6
         bar_width_px = bar_width_seconds * x_unit_to_px
-
-        # Si el texto es más largo que la barra, parte en dos líneas (por palabras)
         if text_width_est > bar_width_px:
-            # Partimos por la mitad (idealmente por palabras)
             words = text.split()
             if len(words) > 1:
                 mid = len(words) // 2
@@ -209,19 +197,16 @@ for lane in swimlanes:
                 phase_label = f"<b>{line1}<br>{line2}</b>"
             else:
                 phase_label = f"<b>{text}</b>"
-            # Reduce el tamaño de fuente si sigue siendo muy largo
             font_size = max(8, int(bar_width_px / (char_count * 0.6)))
         else:
             phase_label = f"<b>{text}</b>"
             font_size = font_size_max
 
         xtext = p['start'] + (p['end'] - p['start']) / 2
-
-        # Sombra para mejorar contraste
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (1,1), (-1,1), (1,-1)]:
             fig.add_annotation(
                 x=xtext,
-                y=ypos + dy * 0.01,
+                y=ypos + dy * 0.012,
                 text=phase_label,
                 showarrow=False,
                 font=dict(size=font_size, color="#000", family="Montserrat, Arial"),
@@ -229,7 +214,6 @@ for lane in swimlanes:
                 align="center",
                 opacity=1,
             )
-        # Etiqueta principal, encima de la barra, en blanco
         fig.add_annotation(
             x=xtext,
             y=ypos,
@@ -240,57 +224,72 @@ for lane in swimlanes:
             align="center"
         )
 
-        # Eventos en abanico
+        # --- EVENTOS modernos: iconos, glow, líneas curvas ---
+        event_emoji = {
+            'Target': '🎯',
+            'Milestone': '🏁',
+            'Barrier': '🚧'
+        }
         events = list(p['rows'].iterrows())
         n_ev = len(events)
         if n_ev == 1:
             angles = [0]
         else:
-            max_angle = 0.48
+            max_angle = 0.57
             angles = [-max_angle + 2 * max_angle * i / (n_ev - 1) for i in range(n_ev)]
-        event_length = 0.43
-
-        # Centro de la barra para el abanico
+        event_length = 0.56
         base_x = p['start'] + (p['end'] - p['start']) / 2
         base_y = ypos
-
         for (ev_idx, (irow, row)), angle in zip(enumerate(events), angles):
             direction = p['dir']
             dx = event_length * np.sin(angle)
             dy = direction * event_length * np.cos(angle)
             event_x = base_x + pd.Timedelta(days=dx * 37)
             event_y = base_y - dy
-
-            # Elegir borde de la barra según direction
             if direction == 1:
-                line_start_y = base_y - BAR_HEIGHT  # ABAJO
+                line_start_y = base_y - BAR_HEIGHT
             else:
-                line_start_y = base_y + BAR_HEIGHT  # ARRIBA
+                line_start_y = base_y + BAR_HEIGHT
 
+            # Línea curva con efecto moderno
             fig.add_trace(go.Scatter(
                 x=[base_x, event_x], y=[line_start_y, event_y],
                 mode="lines",
                 line=dict(
-                    color=rgba_map.get(row['Events'], "rgba(100,116,139,0.48)"),
-                    width=3.5,
+                    color=rgba_map.get(row['Events'], "rgba(100,116,139,0.28)"),
+                    width=5,
                     shape="spline"
                 ),
                 showlegend=False,
                 hoverinfo='skip'
             ))
-            # Sombra del marcador
+            # Glow/Sombra
             fig.add_trace(go.Scatter(
                 x=[event_x], y=[event_y],
                 mode='markers',
-                marker=dict(size=28, color="#CBD5E1", opacity=0.30, line=dict(width=0)),
+                marker=dict(
+                    size=38, 
+                    color="#000", 
+                    opacity=0.17, 
+                    line=dict(width=0)
+                ),
                 showlegend=False,
                 hoverinfo='skip'
             ))
-            # Punto evento principal
+            # Punto evento moderno con icono
             fig.add_trace(go.Scatter(
                 x=[event_x], y=[event_y],
-                mode='markers',
-                marker=dict(size=18, color=color_map.get(row['Events'], "#334155"), line=dict(width=3, color="#fff"), opacity=0.96),
+                mode='markers+text',
+                marker=dict(
+                    size=22,
+                    color=color_map.get(row['Events'], "#334155"),
+                    line=dict(width=3, color="#fff"),
+                    opacity=0.98,
+                    symbol="circle"
+                ),
+                text=[event_emoji.get(row['Events'], '')],
+                textposition="middle center",
+                textfont=dict(size=19),
                 showlegend=False,
                 hovertemplate=(
                     f"<b>{row['Swimlane']}</b><br>"
@@ -302,7 +301,6 @@ for lane in swimlanes:
                 )
             ))
 
-# Leyenda de eventos
 for event, color in color_map.items():
     fig.add_trace(go.Scatter(
         x=[None], y=[None],
@@ -314,7 +312,6 @@ for event, color in color_map.items():
         hoverinfo="none"
     ))
 
-# Ejes y layout
 min_month = df['Month'].min()
 max_month = df['Month'].max()
 all_months = pd.date_range(min_month, max_month, freq='MS')
@@ -336,7 +333,7 @@ fig.update_yaxes(
     showgrid=False,
     zeroline=False,
     showticklabels=True,
-    range=[-0.8 - SWIMLANE_SPACING, SWIMLANE_SPACING * (len(swimlanes)-1) + 0.8 + SWIMLANE_SPACING],
+    range=[-1.3 - SWIMLANE_SPACING, SWIMLANE_SPACING * (len(swimlanes)-1) + 1.3 + SWIMLANE_SPACING],
     ticks="",
     tickfont=dict(size=14, family="Montserrat, Arial", color="#1e293b")
 )
@@ -358,11 +355,11 @@ fig.update_layout(
         bordercolor="#CBD5E1",
         borderwidth=1
     ),
-    height=720,
+    height=840,
 )
 
 with st.container():
-    c1, c2 = st.columns([2,1.8])  # Radar más ancho, panel derecho
+    c1, c2 = st.columns([2,1.8])
 
     with c1:
         st.subheader(f"Swimlane timeline — {selected_month_label}")
@@ -371,7 +368,6 @@ with st.container():
     with c2:
         st.subheader(f"Stakeholder Involvement — {selected_month_label}")
 
-        # -------- Botones de configuración arriba --------
         config_col1, config_col2 = st.columns([0.50, 0.50])
         if "show_config_panel" not in st.session_state:
             st.session_state["show_config_panel"] = False
@@ -384,7 +380,6 @@ with st.container():
             if st.button("⚙️ Foco estratégico", key="open_config_foco", help="Editar pesos de foco estratégico"):
                 st.session_state["show_config_foco"] = True
 
-        # --------- Checkbox pequeño para mostrar/ocultar leyenda -----------
         legend_key = "show_legend_radar"
         if legend_key not in st.session_state:
             st.session_state[legend_key] = False
@@ -403,7 +398,6 @@ with st.container():
         )
         show_legend = st.checkbox("Mostrar leyenda", value=st.session_state[legend_key], key=legend_key)
 
-        # ----------------- Radar chart -----------------
         radar_traces = []
         colores = ["#f59e42","#eab308","#0284c7","#22d3ee","#22c55e","#e11d48","#7c3aed"]
         grupos = df_mes.groupby('Row ID')
@@ -429,7 +423,7 @@ with st.container():
 
         radar_layout = go.Layout(
             polar=dict(radialaxis=dict(visible=True, range=[0,1.1], color="#1e293b")),
-            showlegend=show_legend,  # Control dinámico de la leyenda
+            showlegend=show_legend,
             legend=dict(
                 font=dict(family='Montserrat', size=8, color="#1e293b"),
                 x=0.99, y=0.01, xanchor='right', yanchor='bottom',
@@ -466,7 +460,6 @@ with st.container():
 
         st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
 
-        # -------------- Panel de edición de Stakeholders -------------
         if st.session_state["show_config_panel"]:
             st.markdown("---")
             st.markdown("#### Configuración de pesos de stakeholders")
@@ -515,17 +508,14 @@ with st.container():
                 if st.button("Cerrar", key="cerrar_sin_seleccion"):
                     st.session_state["show_config_panel"] = False
 
-        # -------------- Panel de edición de Foco estratégico -------------
         if st.session_state["show_config_foco"]:
             st.markdown("---")
             st.markdown("#### Configuración de pesos de foco estratégico")
             if 'custom_foco' not in st.session_state:
-                # Inicializamos los valores actuales con los reales para el mes
                 df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
                 fases = ['Desarrollo', 'Implementación', 'Adopción']
                 pesos_actuales = df_mes['Macro Fase'].value_counts(normalize=True).reindex(fases, fill_value=0).values.tolist()
                 st.session_state['custom_foco'] = pesos_actuales
-            # Editar los pesos con sliders
             with st.form("edit_foco_estrategico"):
                 new_foco_vals = []
                 fases = ['Desarrollo', 'Implementación', 'Adopción']
@@ -535,7 +525,6 @@ with st.container():
                     new_foco_vals.append(
                         st.slider(fase, min_value=0.0, max_value=1.0, step=0.01, value=float(st.session_state['custom_foco'][i]), key=f"foco_{fase}")
                     )
-                # Normalizar para que sumen exactamente 1
                 sum_vals = sum(new_foco_vals)
                 if sum_vals != 0:
                     new_foco_vals = [v / sum_vals for v in new_foco_vals]
@@ -550,7 +539,6 @@ with st.container():
                 if close_foco:
                     st.session_state["show_config_foco"] = False
 
-        # Bar chart foco estratégico
         st.subheader(f"Foco estratégico — {selected_month_label}")
         df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
         fases = ['Desarrollo', 'Implementación', 'Adopción']
