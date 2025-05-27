@@ -1,0 +1,82 @@
+Swimlane,Phase,Start Date,End Date,"Row ID",Events,Engagement Action
+User engagement,Target market  approach (Zaragoza),2024-10-01,2025-01-01,"Interest alignment, Context info",Target,"emails, messaging, calls and in-person meetings"
+User engagement,Target market  approach (Zaragoza),2024-10-01,2025-01-01,"Strategy approach
+Preliminary mapping and contacts
+Joint roadmap & offer",Milestone,
+User engagement,Target market  approach (Zaragoza),2024-10-01,2025-01-01,Political Agenda,Barrier,
+Logistics,"Semantic interoperability framework
+",2024-10-01,2025-02-01,Common shared ontology baseline,Milestone,
+Logistics,Strategic Service development,2024-10-01,2025-02-01,Demo strategy service,Target,
+Data economy,Data Space connector (DSC) development,2024-10-01,2025-02-01,"Basic deployment
+New DSC modules and architecture definition ",Milestone,
+User engagement,Lead markets approach,2024-10-01,2025-02-01,Fine-tune mapping,Target,"emails, messaging, calls, congress (WUWM Rimini 29/10-1/11, Berlin Fruitlogistica 5-7/02), in person meetings, on-field visits (Berlin 10/12)"
+User engagement,Lead markets approach,2024-10-01,2025-02-01,"Bologna, Châteaurenard, Berlin, Lviv, Poznan, Tychy, Barcelona, Madrid",Milestone,
+User engagement,Lead markets approach,2024-10-01,2025-02-01,Lack of time and experience on innovation ,Barrier,
+User engagement,wholesalers mapping,2024-11-01,2025-01-01,"profiling, interest alignment",Target,on-site meetings
+User engagement,wholesalers mapping,2024-11-01,2025-01-01,"3 main profiles, 2 early adopters, 5 potential testing scenarios",Milestone,
+User engagement,wholesalers mapping,2024-11-01,2025-01-01,Dynamic day-to-day agendas,Barrier,
+Logistics,Strategic Service development,2024-11-01,2025-01-01,"First demo data set, GUI demo v.0",Milestone,
+Data economy,Data Space connector (DSC) development,2024-11-01,2025-01-01,"Validate business processes mapping and action points
+Assess willigness to Collaborate, to Data-sharing (with service and others), and Trust factors",Target,
+Data economy,Data Space connector (DSC) development,2024-11-01,2025-01-01,Policies & Trust Baselines,Milestone,
+User engagement,user-centric service design,2024-12-01,2025-03-01,feed design of GUI for strategic analysis and service policies including business value hypothesis; define setup for collaboration and data sharing; feed policies' GUI and smart contracts logic for taking decisions based on data value awareness securing trust,Target,on-site/on-line sessions
+User engagement,user-centric service design,2024-12-01,2025-06-01,"MVP testing scenarios and balanced product roadmap
+1. Prioritise operations over strategy for the product
+2. Data-based consultancy in parallel to development
+3. Product development: analytics for decision making, processes' convenience
+4. Commercial development strategy (diversification & institutional integration)",Milestone,
+User engagement,user-centric service design,2024-12-01,2025-03-01,Last minute chaning daily agendas,Barrier,
+Logistics,user-centric service design,2024-12-01,2025-03-01,GUI development,Target,
+Logistics,user-centric service design,2024-12-01,2025-03-01,GUI demo v.0.1,Milestone,
+Data economy,user-centric service design,2024-12-01,2025-05-01,Policy Module development: content & technical integration,Target,
+Data economy,user-centric service design,2024-12-01,2025-05-01,Multi-chain Logging Service Module development: content & architecture,Target,
+Logistics,user-centric service design,2024-12-01,2025-05-01,Service integration in Data Space,Target,
+Data economy,user-centric service design,2024-12-01,2025-03-01,"Service data-model dependant Terms & conditions, Policies and Smart Contracts",Milestone,
+Data economy,user-centric service design,2024-12-01,2025-03-01,Policy and Logging Service Module final architectures and integration in FIWARE DSC (FDSC),Milestone,
+User engagement,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,Feed use cases definition and business assumptions about value perception and readiness to collaborate - between distributors and between wholesalers,Target,"On-site sessions supported by strategic GUI with merchants - meat zaragoza, fish Zaragoza, fish madrid, fruits & vegetables Madrid - and markets - fruits & vegetables Berlin & Bologna"
+User engagement,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,Lack of time for analysis sessions,Barrier,
+Logistics,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,"MVP pivoting - real-time operation focus with new AI commercial agent
+Service data model update | NGSI-LD standard adoption",Target,
+Logistics,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,MVP updated architecture with FIWARE context broker,Target,
+Data economy,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,New FDSC MVP,Milestone,
+User engagement,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,Validate engagement trigger (immediate time saving and income rise),Target,"On-site meetings, emails, messaging"
+User engagement,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,"Lack of time to assess potential and allocate resources to it --> free time quick with lowest resources
+Lack of trust by default (with little time to listen) --> need quick on-field (not on screen) evidence",Barrier,
+Logistics,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,"Second demo data set
+Service's NGSI-LD API
+Service MVP",Target,
+Data economy,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,"Use cases' modules customization (policies, interafeces, smart contracts)",Target,
+User engagement,pilot & feed back,2025-06-01,2025-09-01,Scenario 1 - distribution service offer setup,Target,
+User engagement,pilot & feed back,2025-06-01,2025-09-01,Scenario 2 - distribution service trial,Target,
+User engagement,pilot & feed back,2025-06-01,2025-09-01,summer holidays,Barrier,
+Logistics,pilot & feed back,2025-06-01,2025-09-01,Strategy service refinement - more data sets,Target,
+Logistics,pilot & feed back,2025-06-01,2025-09-01,Strategy consultancy contracts - merchants & markets,Target,
+Data economy,pilot & feed back,2025-06-01,2025-09-01,"FDSC improvements design
+- Services contracting: Marketplace pluggings to customize policies, SLAs, multi-chain logging logics
+- Admin portal to monitor DSC state (e.g. multichain logs)",Target,
+User engagement,Lobby,2024-12-01,2025-02-01,"EU decision-makers mapping, alignment and engagement",Target,"emails, calls"
+User engagement,Lobby,2024-02-12,2024-04-12,Brussels EP mission,Milestone,
+User engagement,Lobby,2025-05-02,2025-07-02,Fresh on Track Berlin's high level meeting,Milestone,
+User engagement,Lobby,2024-12-01,2025-02-01,Lack of visual support with data-based impact from operation,Barrier,
+User engagement,Strategic Position,2024-12-01,2025-02-01,"Engagement and alignment with local administrations (cities, regions, states)",target,meetings and working exchange with technical advisers
+User engagement,Strategic Position,2024-12-01,2025-02-01,High Level brief,Milestone,
+User engagement,Strategic Position,2024-12-01,2025-02-01,Decision-makers availability,Barrier,
+User engagement,Strategic Position,2024-12-01,2025-05-01,Alignment with lead markets agendas,Target,"Position Paper writing, WUWM working group sessions"
+User engagement,Strategic Position,2024-12-01,2025-05-01,"Position Paper release, link with IFAD, FAO endorsement",Milestone,
+User engagement,Strategic Position,2024-12-01,2025-05-01,New target market leads,Milestone,
+User engagement,Strategic Position,2024-12-01,2025-05-01,Decision-makers agendas and narrow availability,Barrier,
+User engagement,Markets on-field visits,2025-03-24,2025-03-25,Châteaurenard 1,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-05-05,2025-07-05,Bologna,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-05-30,2025-02-06,Châteaurenard 2,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-05-22,2025-05-22,Zaragoza TMZ,Target,Follow up with local administration
+User engagement,Markets on-field visits,2025-03-06,2025-04-06,Madrid new association,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-03-01,2025-06-01,"Châteaurenard, Bologna, Berlin joint road maps & offers
+New target market (Madrid)",Milestone,
+User engagement,Markets on-field visits,2025-03-01,2025-06-01,"Dynamic agendas with low availability
+Lack of insights on supporting opportunities",Barrier,
+User engagement,Cities & Regions integration,2025-03-01,2025-06-01,Alignment with administrations agendas and institutional engagement,Target,On-site in person meetings
+User engagement,Cities & Regions integration,2025-03-01,2025-06-01,"Provence region on-boarding
+Madrid city on-boarding
+Comune & Emilia-Romagna on-boarding
+Available funding scenarios",Milestone,
+User engagement,Cities & Regions integration,2025-03-01,2025-06-01,Slow interaction,Barrier,

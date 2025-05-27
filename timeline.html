@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Swimlane Timeline & Stakeholder Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #fff;
+            color: #273043;
+            font-family: 'Montserrat', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #container {
+            display: flex;
+            flex-direction: row;
+            margin: 0 auto;
+            width: 95vw;
+            max-width: 1700px;
+        }
+        #plot {
+            width: 60%;
+            min-width: 700px;
+            height: 720px;
+        }
+        #sidebar {
+            width: 40%;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+        }
+        .header {
+            text-align: center;
+            margin-top: 18px;
+            margin-bottom: -22px;
+            font-size: 2em;
+            font-family: 'Montserrat', Arial, sans-serif;
+            color: #273043;
+        }
+        #stakeholder, #focus {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Swimlane Timeline (Events) + Stakeholder Dashboard</div>
+    <div id="container">
+        <div id="plot"></div>
+        <div id="sidebar">
+            <div id="stakeholder"></div>
+            <div id="focus"></div>
+        </div>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" style="margin:20px auto;display:block;"/>
+    <script>
+    // --- CONFIGURACIONES ---
+    const SWIMLANE_SPACING = 1.2;
+    const swimlanes = ['User engagement', 'Logistics', 'Data economy'];
+    const y_pos = Object.fromEntries(swimlanes.map((lane, i) => [lane, i * SWIMLANE_SPACING]));
+    const color_map = {
+        'Target': '#729BFF',
+        'Milestone': '#58DDAF',
+        'Barrier': '#FF857F'
+    };
+
+    // Stakeholder roles
+    const stakeholder_roles = ['Usuario', 'Prestador', 'Proveedor', 'Facilitador', 'Prescriptor'];
+
+    // Mapeo inventado/coherente para macro-fase
+    function macroFase(phase) {
+        phase = (phase||"").toLowerCase();
+        if (phase.includes("development")) return "Desarrollo";
+        if (phase.includes("implementation") || phase.includes("interoperability") || phase.includes("mapping")) return "Implementación";
+        if (phase.includes("market") || phase.includes("approach") || phase.includes("adoption") || phase.includes("demo")) return "Adopción";
+        return "Otro";
+    }
+
+    // Mapeo inventado de eventos a stakeholder, retorna array de pesos por rol
+    function mapStakeholder(row) {
+        // Regla inventada, pero plausible
+        let v = [0,0,0,0,0]; // [Usuario, Prestador, Proveedor, Facilitador, Prescriptor]
+        if (row['Swimlane'] === "User engagement") {
+            v[0] += 1; // Usuario
+            v[4] += 1; // Prescriptor
+            v[3] += 0.6; // Facilitador
+        }
+        if (row['Swimlane'] === "Logistics") {
+            v[2] += 1; // Proveedor
+            v[3] += 0.8; // Facilitador
+        }
+        if (row['Swimlane'] === "Data economy") {
+            v[1] += 1; // Prestador
+            v[2] += 0.7; // Proveedor
+        }
+        if ((row['Events']||"").toLowerCase().includes("barrier")) {
+            v[3] += 0.6; v[2] += 0.5;
+        }
+        if ((row['Events']||"").toLowerCase().includes("target")) {
+            v[0] += 0.7; v[4] += 0.5;
+        }
+        if ((row['Events']||"").toLowerCase().includes("milestone")) {
+            v = v.map(x=>x+0.3);
+        }
+        // Normalizar a máximo 1
+        let maxv = Math.max(...v, 1);
+        v = v.map(x=>x/maxv);
+        return v;
+    }
+
+    // Leer y procesar el CSV (puedes cargar el tuyo propio)
+    let df = [];
+    let months_sorted = [];
+    let months_labels = [];
+    let all_months = [];
+    let month_to_rows = {};
+
+    // --- INTERACTIVO: Permitir cargar CSV manualmente ---
+    function parseFile(file) {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                processData(results.data);
+            }
+        });
+    }
+    document.getElementById('csvInput').addEventListener('change', function(e){
+        if (e.target.files.length) parseFile(e.target.files[0]);
+    });
+
+    // --- Para modo demo: carga tu archivo por default si no usas input file ---
+    fetch("Cleaned_Timeline_Data.csv")
+    .then(response => response.ok ? response.text() : Promise.reject("No file"))
+    .then(text => {
+        Papa.parse(text, {header:true, skipEmptyLines:true, complete: (results) => processData(results.data)});
+    })
+    .catch(()=>{}); // Si no está el archivo, solo deja el input file
+
+    function processData(data){
+        df = data.map(row => {
+            let r = {...row};
+            // Parse dates
+            r['Start Date'] = new Date(row['Start Date']);
+            r['End Date'] = new Date(row['End Date']);
+            r['Point Date'] = r['End Date'] || r['Start Date'];
+            r['Point Date'] = new Date(r['Point Date'].getFullYear(), r['Point Date'].getMonth(), 1);
+            r['Month'] = new Date(r['Point Date'].getFullYear(), r['Point Date'].getMonth(), 1);
+            r['base_y'] = y_pos[r['Swimlane']];
+            r['color'] = color_map[r['Events']] || "#A0AEC0";
+            return r;
+        });
+
+        // Ordena meses y etiquetas
+        months_sorted = Array.from(new Set(df.map(r=>r['Month'].getTime())))
+            .sort((a,b)=>a-b)
+            .map(t=>new Date(t));
+        months_labels = months_sorted.map(d => d.toLocaleString('en-US', {month:'short', year:'numeric'}));
+        all_months = [];
+        let min_month = months_sorted[0];
+        let max_month = months_sorted[months_sorted.length-1];
+        let cur = new Date(min_month);
+        while (cur <= max_month) {
+            all_months.push(new Date(cur));
+            cur.setMonth(cur.getMonth()+1);
+        }
+
+        // Agrupa filas por mes
+        month_to_rows = {};
+        months_sorted.forEach(month => {
+            month_to_rows[month.getTime()] = df.filter(r => r['Month'].getTime() === month.getTime());
+        });
+
+        // Muestra el gráfico
+        makeSwimlane();
+        // Por default, muestra el último mes
+        showDashForMonth(months_sorted.length-1);
+    }
+
+    // --- SWIMLANE PLOTLY ---
+    function makeSwimlane() {
+        // Agrupa los puntos con solape
+        let group_counter = {};
+        df.forEach(row => {
+            row['group_id'] = row['Swimlane'] + "_" + row['Point Date'];
+            if (!(row['group_id'] in group_counter)) group_counter[row['group_id']] = 0;
+            row['group_offset'] = group_counter[row['group_id']];
+            group_counter[row['group_id']] += 1;
+        });
+        let group_sizes = {};
+        for (let gid in group_counter) group_sizes[gid] = group_counter[gid];
+        const vertical_spacing = 0.22;
+        df.forEach(row => {
+            row['y'] = row['base_y'] +
+                (row['group_offset'] - group_sizes[row['group_id']] / 2 + 0.5) * vertical_spacing;
+        });
+
+        // Líneas base de swimlane
+        let traces = [];
+        for (let lane in y_pos) {
+            traces.push({
+                x: [all_months[0], all_months[all_months.length-1]],
+                y: [y_pos[lane], y_pos[lane]],
+                mode: 'lines',
+                line: { color: '#E6EAF0', width: 1.5 },
+                showlegend: false,
+                hoverinfo: 'skip',
+                visible: true
+            });
+        }
+
+        // Líneas por evento
+        let line_traces = [];
+        df.forEach((row, i) => {
+            let hover = `<b>${row['Swimlane']}</b><br>` +
+                        `<b>Event:</b> ${row['Events']}<br>` +
+                        `<b>Phase:</b> ${row['Phase']}<br>`;
+            if (row['Events'] === 'Target' && row['Engagement Action'])
+                hover += `<b>Engagement Action:</b> ${row['Engagement Action']}<br>`;
+            line_traces.push({
+                x: [row['Start Date'], row['End Date']],
+                y: [row['y'], row['y']],
+                mode: 'lines+text',
+                line: { color: row['color'], width: 12, shape: 'linear' },
+                name: row['Events'],
+                showlegend: false,
+                hovertemplate: hover + "<extra></extra>",
+                visible: true,
+                text: [row['Row ID']],
+                textposition: "middle center",
+                textfont: { size: 8, color: "#273043", family: "Montserrat, Arial" }
+            });
+        });
+        line_traces.forEach(tr => traces.push(tr));
+
+        // Leyenda elegante
+        Object.entries(color_map).forEach(([event, color]) => {
+            traces.push({
+                x: [null], y: [null],
+                mode: 'markers',
+                marker: { size: 15, color: color, line: { width: 2, color: '#fff' }},
+                legendgroup: event,
+                showlegend: true,
+                name: event,
+                hoverinfo: "none",
+                visible: true
+            });
+        });
+
+        // Botones
+        let N_lines = Object.keys(y_pos).length;
+        let N_points = line_traces.length;
+        let N_legend = Object.keys(color_map).length;
+        let buttons = [];
+
+        // Todos
+        let visible_all = Array(N_lines).fill(true)
+            .concat(Array(N_points).fill(true))
+            .concat(Array(N_legend).fill(true));
+        buttons.push({
+            label: "All",
+            method: "update",
+            args: [
+                {visible: visible_all},
+                {annotations: [{
+                    x: 0.5, y: 1.12, xref: 'paper', yref: 'paper', showarrow: false,
+                    text: "",
+                    font: {size: 22, family: "Montserrat, Arial", color: "#273043"},
+                    xanchor: 'center', yanchor: 'top'
+                }]}
+            ]
+        });
+
+        months_sorted.forEach((month, i) => {
+            let visible = Array(N_lines).fill(true);
+            df.forEach(row => {
+                visible.push(row['Month'].getTime() === month.getTime());
+            });
+            visible = visible.concat(Array(N_legend).fill(true));
+            buttons.push({
+                label: months_labels[i],
+                method: "update",
+                args: [
+                    {visible: visible},
+                    {annotations: [{
+                        x: 0.5, y: 1.12, xref: 'paper', yref: 'paper', showarrow: false,
+                        text: months_labels[i],
+                        font: {size: 22, family: "Montserrat, Arial", color: "#273043"},
+                        xanchor: 'center', yanchor: 'top'
+                    }]}
+                ],
+                execute: false
+            });
+        });
+
+        // Layout
+        let layout = {
+            font: {family: "Montserrat, Arial", color: "#273043"},
+            plot_bgcolor: "#fff",
+            paper_bgcolor: "#fff",
+            margin: {l: 120, r: 40, t: 110, b: 60},
+            hoverlabel: {bgcolor: "white", font: {size: 14, family: "Montserrat"}},
+            legend: {
+                title: {text: "Event Type"},
+                orientation: "h",
+                yanchor: "bottom", y: 1.18,
+                xanchor: "left", x: 0.01,
+                font: {size: 13}
+            },
+            height: 650,
+            updatemenus: [{
+                type: "buttons",
+                direction: "down",
+                showactive: true,
+                x: 1.09,
+                y: 0.99,
+                buttons: buttons,
+                bgcolor: "#F8FAFC",
+                bordercolor: "#E5E7EB",
+                borderwidth: 1,
+                font: {size: 14, color: "#273043", family: "Montserrat"},
+                pad: {r: 5, t: 5, b: 5}
+            }],
+            annotations: [{
+                x: 0.5, y: 1.12, xref: 'paper', yref: 'paper', showarrow: false,
+                text: "",
+                font: {size: 22, family: "Montserrat, Arial", color: "#273043"},
+                xanchor: 'center', yanchor: 'top'
+            }],
+            xaxis: {
+                showgrid: true,
+                gridcolor: '#E6EAF0',
+                tickmode: 'array',
+                tickvals: all_months,
+                ticktext: all_months.map(d => d.toLocaleString('en-US', {month:'short', year:'numeric'})),
+                title: "Date (End Date)",
+                zeroline: false,
+                tickfont: {size: 13, family: "Montserrat, Arial"},
+                titlefont: {size: 16, family: "Montserrat, Arial"},
+                range: [new Date(all_months[0].getFullYear(), all_months[0].getMonth()-1, 1),
+                        new Date(all_months[all_months.length-1].getFullYear(), all_months[all_months.length-1].getMonth()+1, 1)]
+            },
+            yaxis: {
+                tickvals: Object.values(y_pos),
+                ticktext: Object.keys(y_pos),
+                showgrid: false,
+                zeroline: false,
+                showticklabels: true,
+                range: [-0.7, SWIMLANE_SPACING * (swimlanes.length-1) + 0.7],
+                ticks: ""
+            },
+            title: ""
+        };
+
+        Plotly.newPlot('plot', traces, layout, {displayModeBar: true, responsive: true});
+
+        // Botones para cambiar dashboard a la derecha:
+        let updateBtns = document.querySelectorAll('.modebar-btn[data-title^="All"], .modebar-btn[data-title^="Jan"]');
+        document.querySelectorAll('.plotly .button').forEach((btn, i) => {
+            btn.addEventListener('click', () => showDashForMonth(i-1));
+        });
+
+        // ¡Alternativa para Plotly, no depende de DOM sino evento click!
+        document.getElementById('plot').on('plotly_buttonclicked', (ev) => {
+            let idx = ev.button.label === 'All' ? -1 : months_labels.indexOf(ev.button.label);
+            showDashForMonth(idx);
+        });
+    }
+
+    // --- DASHBOARD LATERAL: Stakeholder radar + foco estratégico ---
+    function showDashForMonth(idx) {
+        // idx = -1 => "All"
+        let rows = (idx === -1) ? df : month_to_rows[months_sorted[idx].getTime()];
+        if (!rows || !rows.length) {
+            document.getElementById('stakeholder').innerHTML = "<em>No hay datos para este mes.</em>";
+            document.getElementById('focus').innerHTML = "";
+            return;
+        }
+
+        // Agrupa por grupo (Row ID + Swimlane) para el radar
+        let groups = {};
+        rows.forEach(row => {
+            let gid = row['Row ID'] || row['Events'] + row['Phase'];
+            if (!groups[gid]) groups[gid] = [];
+            groups[gid].push(row);
+        });
+
+        // Radar chart: cada grupo = 1 línea
+        let radar_traces = [];
+        let colores = ["#FDBB2D","#FF6A00","#A259F7","#58DDAF","#729BFF","#2EC4B6","#1985A1"];
+        let g_idx = 0;
+        for (let gid in groups) {
+            let vals = [0,0,0,0,0];
+            groups[gid].forEach(row => {
+                let st = mapStakeholder(row);
+                vals = vals.map((v,i) => v + st[i]);
+            });
+            vals = vals.map(x=>x/groups[gid].length);
+            radar_traces.push({
+                type: 'scatterpolar',
+                r: vals.concat([vals[0]]),
+                theta: stakeholder_roles.concat([stakeholder_roles[0]]),
+                fill: 'toself',
+                name: gid,
+                line: {color: colores[g_idx % colores.length], width: 3},
+                opacity: 0.5,
+                marker: {color: colores[g_idx % colores.length]}
+            });
+            g_idx++;
+        }
+
+        let radar_layout = {
+            polar: {
+                radialaxis: { visible: true, range: [0, 1] }
+            },
+            showlegend: true,
+            legend: {x: 1.1, y: 0.7, font: {family: 'Montserrat'}},
+            title: {text:`Stakeholder Involvement — Phase ${idx>-1?months_labels[idx]:"all months"}`, font: {size:20, family:'Montserrat'}}
+        };
+
+        Plotly.newPlot('stakeholder', radar_traces, radar_layout, {displayModeBar:false, responsive:true});
+
+        // Foco estratégico: barras
+        let fase_counts = {};
+        let total = 0;
+        rows.forEach(row => {
+            let mf = macroFase(row['Phase']);
+            if (!fase_counts[mf]) fase_counts[mf] = 0;
+            fase_counts[mf]++;
+            total++;
+        });
+        let macrofases = Object.keys(fase_counts).filter(f=>f!=="Otro");
+        let values = macrofases.map(f=>fase_counts[f]/total);
+
+        let focus_trace = [{
+            x: macrofases,
+            y: values,
+            type: 'bar',
+            marker: {color: ["#277da1", "#43aa8b", "#f3722c"]},
+        }];
+        let focus_layout = {
+            title: {text:`Foco estratégico — Fase ${idx>-1?months_labels[idx]:"all months"}`, font: {size:20, family:'Montserrat'}},
+            yaxis: {title:"Peso relativo", range:[0,1], tickformat:'.0%'},
+            xaxis: {title:""},
+            margin: {t:50}
+        };
+        Plotly.newPlot('focus', focus_trace, focus_layout, {displayModeBar:false, responsive:true});
+    }
+    </script>
+</body>
+</html>
