@@ -182,6 +182,29 @@ for lane in swimlanes:
             hoverinfo='skip'
         ))
 
+        # -------- NUEVO: Círculo con la fecha si End Date no es día 1 --------
+        if p['end'].day != 1:
+            fig.add_trace(go.Scatter(
+                x=[p['end']],
+                y=[ypos],
+                mode='markers+text',
+                marker=dict(
+                    size=38,
+                    color='#1e293b',
+                    line=dict(width=3, color='#fff')
+                ),
+                text=[p['end'].strftime('%d %b')],
+                textfont=dict(
+                    size=10,
+                    color='#fff',
+                    family="Montserrat, Arial"
+                ),
+                textposition="middle center",
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+        # -------- FIN NUEVO --------
+
         bar_width_seconds = (p['end'] - p['start']).total_seconds()
         text = p['name']
         char_count = len(text)
@@ -561,4 +584,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de radar o usando los paneles de configuración.")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de [...]")
