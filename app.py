@@ -339,7 +339,6 @@ min_month = df['Month'].min()
 max_month = df['Month'].max()
 all_months = pd.date_range(min_month, max_month, freq='MS')
 
-
 if not df_mes.empty and pd.notnull(df_mes['Start Date']).any():
     first_start_date = df_mes['Start Date'].min()
     first_month = first_start_date.replace(day=1)
@@ -357,29 +356,19 @@ else:
     last_month_label = "Sin datos"
 
 if first_month is not None and last_month is not None:
-    if first_month == last_month:
-        # Queremos que el eje X sea [first_month, first_month + 1 mes]
-        start_x = first_month
-        end_x = (first_month + pd.DateOffset(months=1)).replace(day=1)
-        all_months = pd.date_range(start_x, end_x, freq='MS')
-        x_range = [start_x, end_x]
-    else:
-        start_x = first_month
-        end_x = last_month + pd.offsets.MonthEnd(0)
-        all_months = pd.date_range(start_x, end_x, freq='MS')
-        x_range = [start_x, end_x]
+    all_months = pd.date_range(first_month, last_month, freq='MS')
+    x_range = [first_month, last_month + pd.offsets.MonthEnd(0)] # incluyente hasta fin de mes
 else:
     all_months = pd.date_range(df['Month'].min(), df['Month'].max(), freq='MS')
     x_range = None
 
-
 fig.update_xaxes(
     showgrid=True,
     gridcolor='#E2E8F0',
-    tickmode='auto',
+    tickmode='array',
     tickvals=all_months,
     ticktext=[d.strftime('%b %Y') for d in all_months],
-    title="Date (End Date)",
+    title="Date",
     zeroline=False,
     tickfont=dict(size=14, family="Montserrat, Arial", color="#1e293b"),
     title_font=dict(size=16, family="Montserrat, Arial", color="#1e293b"),
