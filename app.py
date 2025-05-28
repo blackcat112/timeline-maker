@@ -7,7 +7,7 @@ from datetime import datetime
 # ----------- CARGA DE DATOS -----------------
 st.set_page_config(layout="wide", page_title="Stakeholder Timeline Dashboard")
 
-st.title("Stakeholder Timeline & Strategic Focus")
+st.title("Stakeholder Timeline & Strategic Focus - Capillar IT")
 
 uploaded = st.sidebar.file_uploader("Carga archivo Csv", type="csv")
 if uploaded:
@@ -59,17 +59,29 @@ def mapStakeholder(row, custom_weights=None):
         v[2] += 1; v[3] += 0.8
     if row['Swimlane'] == "Data economy":
         v[1] += 1; v[2] += 0.7
-    if pd.notnull(row['Events']) and "barrier" in row['Events'].lower():
+    if pd.notnull(row['Events']) and "barrier" in str(row['Events']).lower():
         v[3] += 0.6; v[2] += 0.5
-    if pd.notnull(row['Events']) and "target" in row['Events'].lower():
+    if pd.notnull(row['Events']) and "target" in str(row['Events']).lower():
         v[0] += 0.7; v[4] += 0.5
-    if pd.notnull(row['Events']) and "milestone" in row['Events'].lower():
+    if pd.notnull(row['Events']) and "milestone" in str(row['Events']).lower():
         v = [x+0.3 for x in v]
     maxv = max(v + [1])
     v = [x/maxv for x in v]
     if custom_weights is not None:
         v = custom_weights
     return v
+
+# --- NUEVO: lista de stakeholders principales ---
+
+stakeholder_entities = [
+    'Mayorista sin dist',
+    'Mayorista con dist',
+    'Agrupacion mayoristas',
+    'Admin mercado',
+    'Admin publica',
+    'Cliente mayorista',
+    'Consultor externo'
+]
 
 # ----------- INTERFAZ DE USUARIO -------------
 with st.sidebar:
@@ -102,8 +114,8 @@ rgba_map = {
 swimlanes = ['User engagement', 'Logistics', 'Data economy']
 
 # MÁS ESPACIO entre swimlanes y phases
-SWIMLANE_SPACING = 10  # antes 1.7
-PHASE_SLOT = 0.89      # antes 0.38
+SWIMLANE_SPACING = 10
+PHASE_SLOT = 0.89
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
@@ -121,13 +133,12 @@ for lane, y in y_pos.items():
         hoverinfo='skip'
     ))
 
-# 2. Phases como columnas, con dirección alternante y mayor separación
+# 2. Phases como columnas
 for lane in swimlanes:
     sub = df_mes[df_mes['Swimlane'] == lane].copy()
     if sub.empty: continue
     phases = []
     for phase, phase_df in sub.groupby('Phase'):
-        # Aseguramos que los valores NaT no se cuenten para el rango
         start = pd.to_datetime(phase_df['Start Date'], errors='coerce').min()
         end = pd.to_datetime(phase_df['End Date'], errors='coerce').max()
         phases.append({'name': phase, 'start': start, 'end': end, 'rows': phase_df})
@@ -169,20 +180,20 @@ for lane in swimlanes:
             hoverinfo='skip',
             opacity=0.13
         ))
-        # Barra phase más gruesa y visible: azul claro con borde blanco
-        BAR_HEIGHT = 0.33  # Más grueso
+        # Barra phase más grueso
+        BAR_HEIGHT = 0.33
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end'], p['end'], p['start'], p['start']],
             y=[ypos-BAR_HEIGHT, ypos-BAR_HEIGHT, ypos+BAR_HEIGHT, ypos+BAR_HEIGHT, ypos-BAR_HEIGHT],
             fill="toself",
-            fillcolor="#60a5fa",  # azul claro
-            line=dict(width=3, color="#000000"),  # borde blanco
+            fillcolor="#60a5fa",
+            line=dict(width=3, color="#000000"),
             mode='lines',
             showlegend=False,
             hoverinfo='skip'
         ))
 
-        # -------- NUEVO: Círculo con la fecha si End Date no es día 1 --------
+        # Círculo con la fecha si End Date no es día 1
         if p['end'].day != 1:
             fig.add_trace(go.Scatter(
                 x=[p['end']],
@@ -203,7 +214,6 @@ for lane in swimlanes:
                 showlegend=False,
                 hoverinfo='skip'
             ))
-        # -------- FIN NUEVO --------
 
         bar_width_seconds = (p['end'] - p['start']).total_seconds()
         text = p['name']
@@ -248,7 +258,7 @@ for lane in swimlanes:
             align="center"
         )
 
-        # --- EVENTOS modernos: iconos, glow, líneas curvas ---
+        # EVENTOS modernos: iconos, glow, líneas curvas
         event_emoji = {
             'Target': '🎯',
             'Milestone': '🏁',
@@ -275,8 +285,6 @@ for lane in swimlanes:
             else:
                 line_start_y = base_y + BAR_HEIGHT
 
-            # Línea curva con efecto moderno
-           
             # Glow/Sombra
             fig.add_trace(go.Scatter(
                 x=[event_x], y=[event_y],
@@ -310,6 +318,7 @@ for lane in swimlanes:
                     f"<b>Event:</b> {row['Events']}<br>"
                     f"<b>Phase:</b> {row['Phase']}<br>"
                     f"<b>Row ID:</b> {row.get('Row ID', '')}<br>"
+                    f"<b>Start Date:</b> {row['Start Date'].strftime('%Y-%m-%d') if pd.notnull(row['Start Date']) else ''}<br>"
                     + (f"<b>Engagement Action:</b> {row['Engagement Action']}<br>" if row['Events'] == 'Target' and pd.notnull(row.get('Engagement Action', None)) else "")
                     + "<extra></extra>"
                 )
@@ -330,16 +339,51 @@ min_month = df['Month'].min()
 max_month = df['Month'].max()
 all_months = pd.date_range(min_month, max_month, freq='MS')
 
+
+if not df_mes.empty and pd.notnull(df_mes['Start Date']).any():
+    first_start_date = df_mes['Start Date'].min()
+    first_month = first_start_date.replace(day=1)
+    first_month_label = first_month.strftime('%b %Y')
+else:
+    first_month = None
+    first_month_label = "Sin datos"
+
+if not df_mes.empty and pd.notnull(df_mes['End Date']).any():
+    last_end_date = df_mes['End Date'].max()
+    last_month = last_end_date.replace(day=1)
+    last_month_label = last_month.strftime('%b %Y')
+else:
+    last_month = None
+    last_month_label = "Sin datos"
+
+if first_month is not None and last_month is not None:
+    if first_month == last_month:
+        # Queremos que el eje X sea [first_month, first_month + 1 mes]
+        start_x = first_month
+        end_x = (first_month + pd.DateOffset(months=1)).replace(day=1)
+        all_months = pd.date_range(start_x, end_x, freq='MS')
+        x_range = [start_x, end_x]
+    else:
+        start_x = first_month
+        end_x = last_month + pd.offsets.MonthEnd(0)
+        all_months = pd.date_range(start_x, end_x, freq='MS')
+        x_range = [start_x, end_x]
+else:
+    all_months = pd.date_range(df['Month'].min(), df['Month'].max(), freq='MS')
+    x_range = None
+
+
 fig.update_xaxes(
     showgrid=True,
     gridcolor='#E2E8F0',
-    tickmode='array',
+    tickmode='auto',
     tickvals=all_months,
     ticktext=[d.strftime('%b %Y') for d in all_months],
     title="Date (End Date)",
     zeroline=False,
     tickfont=dict(size=14, family="Montserrat, Arial", color="#1e293b"),
-    title_font=dict(size=16, family="Montserrat, Arial", color="#1e293b")
+    title_font=dict(size=16, family="Montserrat, Arial", color="#1e293b"),
+    range=x_range
 )
 fig.update_yaxes(
     tickvals=[y_pos[lane] for lane in swimlanes],
@@ -372,15 +416,16 @@ fig.update_layout(
     height=840,
 )
 
+
 with st.container():
     c1, c2 = st.columns([2,1.8])
 
     with c1:
-        st.subheader(f"Swimlane timeline — {selected_month_label}")
+        st.subheader(f"Swimlane timeline / {first_month_label} - {selected_month_label}")
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.subheader(f"Stakeholder Involvement — {selected_month_label}")
+        st.subheader(f"Stakeholder Involvement / {first_month_label} - {selected_month_label}")
 
         config_col1, config_col2 = st.columns([0.50, 0.50])
         if "show_config_panel" not in st.session_state:
@@ -412,24 +457,44 @@ with st.container():
         )
         show_legend = st.checkbox("Mostrar leyenda", value=st.session_state[legend_key], key=legend_key)
 
-        radar_traces = []
+        # ------- NUEVO RADAR POR STAKEHOLDER ---------
         colores = ["#f59e42","#eab308","#0284c7","#22d3ee","#22c55e","#e11d48","#7c3aed"]
-        grupos = df_mes.groupby('Row ID')
-        for i, (gid, g) in enumerate(grupos):
-            if gid in st.session_state.get('custom_weights', {}):
-                vals = st.session_state['custom_weights'][gid]
+        radar_traces = []
+        for i, stakeholder in enumerate(stakeholder_entities):
+            group = df_mes[df_mes['Stakeholder'] == stakeholder] if 'Stakeholder' in df_mes.columns else pd.DataFrame()
+            # Para edición: custom_weights por phase+stakeholder
+            custom_vals = None
+            if "custom_weights" in st.session_state:
+                # Si alguna phase está seleccionada, la edición es específica.
+                # Pero para el radar, muestra el promedio de todos los pesos para ese stakeholder en el mes.
+                # Si hay pesos custom para alguna phase de este stakeholder, úsalos en el promedio.
+                # Si no, calcula promedio natural.
+                phase_names = df_mes['Phase'].dropna().unique().tolist()
+                vals_list = []
+                for phase in phase_names:
+                    key_id = f"{phase}__{stakeholder}"
+                    if key_id in st.session_state['custom_weights']:
+                        vals_list.append(st.session_state['custom_weights'][key_id])
+                if vals_list:
+                    # Promedia los custom si existen
+                    avg_vals = [float(np.mean([vals[i] for vals in vals_list])) for i in range(5)]
+                    custom_vals = avg_vals
+            if group.empty and not custom_vals:
+                continue
+            if custom_vals:
+                vals = custom_vals
             else:
                 vals = [0,0,0,0,0]
-                for _, row in g.iterrows():
+                for _, row in group.iterrows():
                     st_vals = mapStakeholder(row)
-                    vals = [x + y for x,y in zip(vals, st_vals)]
-                n = len(g)
+                    vals = [x + y for x, y in zip(vals, st_vals)]
+                n = len(group)
                 if n: vals = [v/n for v in vals]
             radar_traces.append(go.Scatterpolar(
                 r = vals + [vals[0]],
                 theta = stakeholder_roles + [stakeholder_roles[0]],
                 fill = 'toself',
-                name = gid[:35] + ("..." if len(gid)>35 else ""),
+                name = stakeholder,
                 line=dict(color=colores[i%len(colores)], width=3),
                 opacity=0.7,
                 visible=True
@@ -439,7 +504,7 @@ with st.container():
             polar=dict(radialaxis=dict(visible=True, range=[0,1.1], color="#1e293b")),
             showlegend=show_legend,
             legend=dict(
-                font=dict(family='Montserrat', size=8, color="#1e293b"),
+                font=dict(family='Montserrat', size=10, color="#1e293b"),
                 x=0.99, y=0.01, xanchor='right', yanchor='bottom',
                 bordercolor='#e5e7eb', borderwidth=1, bgcolor='#fff',
                 orientation='v',
@@ -474,54 +539,57 @@ with st.container():
 
         st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
 
+        # ----------- NUEVO PANEL DE CONFIGURACIÓN DE PESOS ----------
         if st.session_state["show_config_panel"]:
             st.markdown("---")
             st.markdown("#### Configuración de pesos de stakeholders")
             if 'custom_weights' not in st.session_state:
                 st.session_state['custom_weights'] = {}
-            grupos = df_mes.groupby('Row ID')
-            eventos_lista = []
-            for gid, g in grupos:
-                nombre = gid[:35] + ("..." if len(gid)>35 else "")
-                eventos_lista.append(nombre)
-            selected_g = st.selectbox("Selecciona un evento para editar stakeholders", options=[''] + eventos_lista, key="config_select_event")
-            selected_gid = None
-            if selected_g != '':
-                for gid in grupos.groups.keys():
-                    if selected_g == gid[:35] + ("..." if len(gid)>35 else ""):
-                        selected_gid = gid
-                        break
-            if selected_gid is not None:
-                g = grupos.get_group(selected_gid)
-                if selected_gid in st.session_state['custom_weights']:
-                    current_vals = st.session_state['custom_weights'][selected_gid]
+
+            # 1. Selecciona una fase
+            phases = df_mes['Phase'].dropna().unique().tolist()
+            selected_phase = st.selectbox("Selecciona una fase", options=[''] + phases, key="config_select_phase")
+            if selected_phase:
+                # 2. Selecciona un stakeholder
+                selected_stakeholder = st.selectbox("Selecciona un stakeholder", options=[''] + stakeholder_entities, key="config_select_stakeholder")
+                if selected_stakeholder:
+                    group = df_mes[(df_mes['Phase'] == selected_phase) & (df_mes['Stakeholder'] == selected_stakeholder)] if 'Stakeholder' in df_mes.columns else pd.DataFrame()
+                    key_id = f"{selected_phase}__{selected_stakeholder}"
+                    if key_id in st.session_state['custom_weights']:
+                        current_vals = st.session_state['custom_weights'][key_id]
+                    else:
+                        vals = [0,0,0,0,0]
+                        for _, row in group.iterrows():
+                            st_vals = mapStakeholder(row)
+                            vals = [x + y for x, y in zip(vals, st_vals)]
+                        n = len(group)
+                        if n: vals = [v/n for v in vals]
+                        current_vals = vals
+                    with st.form(f"edit_{key_id}"):
+                        st.write(f"Ajusta la relevancia de cada rol para el stakeholder **{selected_stakeholder}** en la fase **{selected_phase}**:")
+                        new_vals = []
+                        for i, role in enumerate(stakeholder_roles):
+                            new_vals.append(
+                                st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{key_id}_{role}_config")
+                            )
+                        col_save, col_close = st.columns([0.5,0.5])
+                        with col_save:
+                            submit = st.form_submit_button("Guardar cambios")
+                        with col_close:
+                            close_panel = st.form_submit_button("Cerrar")
+                        if submit:
+                            st.session_state['custom_weights'][key_id] = new_vals
+                            st.success("¡Pesos actualizados para este stakeholder y fase!")
+                        if close_panel:
+                            st.session_state["show_config_panel"] = False
                 else:
-                    vals = [0,0,0,0,0]
-                    for _, row in g.iterrows():
-                        st_vals = mapStakeholder(row)
-                        vals = [x + y for x,y in zip(vals, st_vals)]
-                    n = len(g)
-                    if n: vals = [v/n for v in vals]
-                    current_vals = vals
-                with st.form(f"edit_{selected_gid}"):
-                    st.write("Ajusta la relevancia de cada stakeholder para este evento:")
-                    new_vals = []
-                    for i, role in enumerate(stakeholder_roles):
-                        new_vals.append(st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{selected_gid}_{role}_config"))
-                    col_save, col_close = st.columns([0.5,0.5])
-                    with col_save:
-                        submit = st.form_submit_button("Guardar cambios")
-                    with col_close:
-                        close_panel = st.form_submit_button("Cerrar")
-                    if submit:
-                        st.session_state['custom_weights'][selected_gid] = new_vals
-                        st.success("¡Pesos actualizados para este evento!")
-                    if close_panel:
+                    if st.button("Cerrar", key="cerrar_sin_stakeholder"):
                         st.session_state["show_config_panel"] = False
             else:
-                if st.button("Cerrar", key="cerrar_sin_seleccion"):
+                if st.button("Cerrar", key="cerrar_sin_phase"):
                     st.session_state["show_config_panel"] = False
 
+        # ---------- Foco estratégico (igual que antes) ----------
         if st.session_state["show_config_foco"]:
             st.markdown("---")
             st.markdown("#### Configuración de pesos de foco estratégico")
@@ -553,7 +621,7 @@ with st.container():
                 if close_foco:
                     st.session_state["show_config_foco"] = False
 
-        st.subheader(f"Foco estratégico — {selected_month_label}")
+        st.subheader(f"Foco estratégico / {first_month_label} - {selected_month_label}")
         df_mes['Macro Fase'] = df_mes['Phase'].map(macroFase)
         fases = ['Desarrollo', 'Implementación', 'Adopción']
         if 'custom_foco' in st.session_state:
@@ -574,4 +642,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de [...]")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder, y después ajustando los roles. Puedes editar los pesos de foco estratégico también.")
