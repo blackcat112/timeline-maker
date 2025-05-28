@@ -286,25 +286,12 @@ for lane in swimlanes:
             else:
                 line_start_y = base_y + BAR_HEIGHT
 
-            # Glow/Sombra
-            fig.add_trace(go.Scatter(
-                x=[event_x], y=[event_y],
-                mode='markers',
-                marker=dict(
-                    size=27, 
-                    color="#000", 
-                    opacity=0.17, 
-                    line=dict(width=0)
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
             # Punto evento moderno con icono
             fig.add_trace(go.Scatter(
                 x=[event_x], y=[event_y],
                 mode='markers+text',
                 marker=dict(
-                    size=22,
+                    size=17,
                     color=color_map.get(row['Events'], "#334155"),
                     line=dict(width=3, color="#fff"),
                     opacity=0.98,
@@ -312,7 +299,7 @@ for lane in swimlanes:
                 ),
                 text=[event_emoji.get(row['Events'], '')],
                 textposition="middle center",
-                textfont=dict(size=19),
+                textfont=dict(size=15),
                 showlegend=False,
                 hovertemplate=(
                     f"<b>{row['Swimlane']}</b><br>"
