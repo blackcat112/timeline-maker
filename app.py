@@ -102,8 +102,8 @@ rgba_map = {
 swimlanes = ['User engagement', 'Logistics', 'Data economy']
 
 # MÁS ESPACIO entre swimlanes y phases
-SWIMLANE_SPACING = 2.4  # antes 1.7
-PHASE_SLOT = 0.65       # antes 0.38
+SWIMLANE_SPACING = 5  # antes 1.7
+PHASE_SLOT = 0.88       # antes 0.38
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
@@ -176,7 +176,7 @@ for lane in swimlanes:
             y=[ypos-BAR_HEIGHT, ypos-BAR_HEIGHT, ypos+BAR_HEIGHT, ypos+BAR_HEIGHT, ypos-BAR_HEIGHT],
             fill="toself",
             fillcolor="#60a5fa",  # azul claro
-            line=dict(width=3, color="#fff"),  # borde blanco
+            line=dict(width=3, color="#000000"),  # borde blanco
             mode='lines',
             showlegend=False,
             hoverinfo='skip'
