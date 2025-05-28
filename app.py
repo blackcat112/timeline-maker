@@ -456,7 +456,7 @@ with st.container():
     with c2:
         st.subheader(f"Stakeholder Involvement / {first_month_label} - {selected_month_label}")
 
-        config_col1, config_col2 = st.columns([0.50, 0.50])
+        config_col1, config_col2, config_col3 = st.columns([0.34, 0.34, 0.32])
         if "show_config_panel" not in st.session_state:
             st.session_state["show_config_panel"] = False
         if "show_config_foco" not in st.session_state:
@@ -472,6 +472,27 @@ with st.container():
         if legend_key not in st.session_state:
             st.session_state[legend_key] = False
 
+        # --- Nuevo: Selector de fase para el radar ---
+        phases = df_mes['Phase'].dropna().unique().tolist()
+        if not phases:
+            st.info("No hay fases para este filtro.")
+            selected_radar_phase = None
+        else:
+            # Elige una clave única para el filtro actual
+            month_key = str(selected_month_label)
+            radar_phase_key = f"radar_phase_{month_key}"
+            # Preselecciona la primera si no la tenías guardada
+            if radar_phase_key not in st.session_state or st.session_state[radar_phase_key] not in phases:
+                st.session_state[radar_phase_key] = phases[0]
+            selected_radar_phase = st.selectbox(
+                "Fase para Radar",
+                options=phases,
+                index=phases.index(st.session_state[radar_phase_key]) if st.session_state[radar_phase_key] in phases else 0,
+                key=radar_phase_key,
+                help="Selecciona la fase a visualizar en el radar"
+            )
+
+        # Checkbox leyenda
         st.markdown(
             """
             <style>
@@ -486,48 +507,40 @@ with st.container():
         )
         show_legend = st.checkbox("Mostrar leyenda", value=st.session_state[legend_key], key=legend_key)
 
-        # ------- NUEVO RADAR POR STAKEHOLDER ---------
+        # ------- RADAR SOLO PARA FASE SELECCIONADA ---------
         colores = ["#f59e42","#eab308","#0284c7","#22d3ee","#22c55e","#e11d48","#7c3aed"]
         radar_traces = []
-        for i, stakeholder in enumerate(stakeholder_entities):
-            group = df_mes[df_mes['Stakeholder'] == stakeholder] if 'Stakeholder' in df_mes.columns else pd.DataFrame()
-            # Para edición: custom_weights por phase+stakeholder
-            custom_vals = None
-            if "custom_weights" in st.session_state:
-                # Si alguna phase está seleccionada, la edición es específica.
-                # Pero para el radar, muestra el promedio de todos los pesos para ese stakeholder en el mes.
-                # Si hay pesos custom para alguna phase de este stakeholder, úsalos en el promedio.
-                # Si no, calcula promedio natural.
-                phase_names = df_mes['Phase'].dropna().unique().tolist()
-                vals_list = []
-                for phase in phase_names:
-                    key_id = f"{phase}__{stakeholder}"
-                    if key_id in st.session_state['custom_weights']:
-                        vals_list.append(st.session_state['custom_weights'][key_id])
-                if vals_list:
-                    # Promedia los custom si existen
-                    avg_vals = [float(np.mean([vals[i] for vals in vals_list])) for i in range(5)]
-                    custom_vals = avg_vals
-            if group.empty and not custom_vals:
-                continue
-            if custom_vals:
-                vals = custom_vals
-            else:
-                vals = [0,0,0,0,0]
-                for _, row in group.iterrows():
-                    st_vals = mapStakeholder(row)
-                    vals = [x + y for x, y in zip(vals, st_vals)]
-                n = len(group)
-                if n: vals = [v/n for v in vals]
-            radar_traces.append(go.Scatterpolar(
-                r = vals + [vals[0]],
-                theta = stakeholder_roles + [stakeholder_roles[0]],
-                fill = 'toself',
-                name = stakeholder,
-                line=dict(color=colores[i%len(colores)], width=3),
-                opacity=0.7,
-                visible=True
-            ))
+        # Ahora los custom_weights se guardan por mes+fase+stakeholder
+        # Creamos una key global así: "custom_weights_{month_key}"
+        cw_key = f"custom_weights_{month_key}"
+        if cw_key not in st.session_state:
+            st.session_state[cw_key] = {}
+
+        # Solo muestra el radar si hay fase seleccionada
+        if selected_radar_phase:
+            for i, stakeholder in enumerate(stakeholder_entities):
+                group = df_mes[(df_mes['Phase'] == selected_radar_phase) & (df_mes['Stakeholder'] == stakeholder)] if 'Stakeholder' in df_mes.columns else pd.DataFrame()
+                key_id = f"{selected_radar_phase}__{stakeholder}"
+                if key_id in st.session_state[cw_key]:
+                    vals = st.session_state[cw_key][key_id]
+                else:
+                    # Si no hay custom, calcula con la función mapStakeholder
+                    vals = [0,0,0,0,0]
+                    for _, row in group.iterrows():
+                        st_vals = mapStakeholder(row)
+                        vals = [x + y for x, y in zip(vals, st_vals)]
+                    n = len(group)
+                    if n: vals = [v/n for v in vals]
+                if not group.empty or key_id in st.session_state[cw_key]:
+                    radar_traces.append(go.Scatterpolar(
+                        r = vals + [vals[0]],
+                        theta = stakeholder_roles + [stakeholder_roles[0]],
+                        fill = 'toself',
+                        name = stakeholder,
+                        line=dict(color=colores[i%len(colores)], width=3),
+                        opacity=0.7,
+                        visible=True
+                    ))
 
         radar_layout = go.Layout(
             polar=dict(radialaxis=dict(visible=True, range=[0,1.1], color="#1e293b")),
@@ -550,15 +563,15 @@ with st.container():
 
         st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
 
-        # ----------- NUEVO PANEL DE CONFIGURACIÓN DE PESOS ----------
+        # ----- PANEL DE EDICIÓN DE PESOS DE STAKEHOLDER ---------
         if st.session_state["show_config_panel"]:
             st.markdown("---")
             st.markdown("#### Configuración de pesos de stakeholders")
-            if 'custom_weights' not in st.session_state:
-                st.session_state['custom_weights'] = {}
+            # Usa la clave por filtro de mes
+            if cw_key not in st.session_state:
+                st.session_state[cw_key] = {}
 
             # 1. Selecciona una fase
-            phases = df_mes['Phase'].dropna().unique().tolist()
             selected_phase = st.selectbox("Selecciona una fase", options=[''] + phases, key="config_select_phase")
             if selected_phase:
                 # 2. Selecciona un stakeholder
@@ -566,8 +579,8 @@ with st.container():
                 if selected_stakeholder:
                     group = df_mes[(df_mes['Phase'] == selected_phase) & (df_mes['Stakeholder'] == selected_stakeholder)] if 'Stakeholder' in df_mes.columns else pd.DataFrame()
                     key_id = f"{selected_phase}__{selected_stakeholder}"
-                    if key_id in st.session_state['custom_weights']:
-                        current_vals = st.session_state['custom_weights'][key_id]
+                    if key_id in st.session_state[cw_key]:
+                        current_vals = st.session_state[cw_key][key_id]
                     else:
                         vals = [0,0,0,0,0]
                         for _, row in group.iterrows():
@@ -581,7 +594,7 @@ with st.container():
                         new_vals = []
                         for i, role in enumerate(stakeholder_roles):
                             new_vals.append(
-                                st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{key_id}_{role}_config")
+                                st.slider(role, min_value=0.0, max_value=1.0, step=0.05, value=float(current_vals[i]), key=f"{cw_key}_{key_id}_{role}_config")
                             )
                         col_save, col_close = st.columns([0.5,0.5])
                         with col_save:
@@ -589,8 +602,8 @@ with st.container():
                         with col_close:
                             close_panel = st.form_submit_button("Cerrar")
                         if submit:
-                            st.session_state['custom_weights'][key_id] = new_vals
-                            st.success("¡Pesos actualizados para este stakeholder y fase!")
+                            st.session_state[cw_key][key_id] = new_vals
+                            st.success("¡Pesos actualizados para este stakeholder y fase del filtro!")
                         if close_panel:
                             st.session_state["show_config_panel"] = False
                 else:
@@ -653,4 +666,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder y ajustando los sliders.")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder, y ajustando los sliders. Los valores quedan guardados para el filtro de mes y fase seleccionados.")
