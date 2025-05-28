@@ -102,8 +102,8 @@ rgba_map = {
 swimlanes = ['User engagement', 'Logistics', 'Data economy']
 
 # MÁS ESPACIO entre swimlanes y phases
-SWIMLANE_SPACING = 5  # antes 1.7
-PHASE_SLOT = 0.88       # antes 0.38
+SWIMLANE_SPACING = 10  # antes 1.7
+PHASE_SLOT = 0.89      # antes 0.38
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
@@ -276,23 +276,13 @@ for lane in swimlanes:
                 line_start_y = base_y + BAR_HEIGHT
 
             # Línea curva con efecto moderno
-            fig.add_trace(go.Scatter(
-                x=[base_x, event_x], y=[line_start_y, event_y],
-                mode="lines",
-                line=dict(
-                    color=rgba_map.get(row['Events'], "rgba(100,116,139,0.28)"),
-                    width=5,
-                    shape="spline"
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+           
             # Glow/Sombra
             fig.add_trace(go.Scatter(
                 x=[event_x], y=[event_y],
                 mode='markers',
                 marker=dict(
-                    size=38, 
+                    size=27, 
                     color="#000", 
                     opacity=0.17, 
                     line=dict(width=0)

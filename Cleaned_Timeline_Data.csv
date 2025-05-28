@@ -33,12 +33,12 @@ Data economy,user-centric service design,2024-12-01,2025-05-01,Multi-chain Loggi
 Logistics,user-centric service design,2024-12-01,2025-05-01,Service integration in Data Space,Target,
 Data economy,user-centric service design,2024-12-01,2025-03-01,"Service data-model dependant Terms & conditions, Policies and Smart Contracts",Milestone,
 Data economy,user-centric service design,2024-12-01,2025-03-01,Policy and Logging Service Module final architectures and integration in FIWARE DSC (FDSC),Milestone,
-User engagement,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,Feed use cases definition and business assumptions about value perception and readiness to collaborate - between distributors and between wholesalers,Target,"On-site sessions supported by strategic GUI with merchants - meat zaragoza, fish Zaragoza, fish madrid, fruits & vegetables Madrid - and markets - fruits & vegetables Berlin & Bologna"
-User engagement,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,Lack of time for analysis sessions,Barrier,
-Logistics,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,"MVP pivoting - real-time operation focus with new AI commercial agent
+User engagement,user-centric testing scenarios design,2025-03-01,2025-05-01,Feed use cases definition and business assumptions about value perception and readiness to collaborate - between distributors and between wholesalers,Target,"On-site sessions supported by strategic GUI with merchants - meat zaragoza, fish Zaragoza, fish madrid, fruits & vegetables Madrid - and markets - fruits & vegetables Berlin & Bologna"
+User engagement,user-centric testing scenarios design,2025-03-01,2025-05-01,Lack of time for analysis sessions,Barrier,
+Logistics,user-centric testing scenarios design,2025-03-01,2025-05-01,"MVP pivoting - real-time operation focus with new AI commercial agent
 Service data model update | NGSI-LD standard adoption",Target,
-Logistics,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,MVP updated architecture with FIWARE context broker,Target,
-Data economy,user-centric testing scenarios design & service-desing feed back,2025-03-01,2025-05-01,New FDSC MVP,Milestone,
+Logistics,user-centric testing scenarios design,2025-03-01,2025-05-01,MVP updated architecture with FIWARE context broker,Target,
+Data economy,user-centric testing scenarios design,2025-03-01,2025-05-01,New FDSC MVP,Milestone,
 User engagement,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,Validate engagement trigger (immediate time saving and income rise),Target,"On-site meetings, emails, messaging"
 User engagement,wholesalers on-boarding & desing feed back,2025-04-01,2025-06-01,"Lack of time to assess potential and allocate resources to it --> free time quick with lowest resources
 Lack of trust by default (with little time to listen) --> need quick on-field (not on screen) evidence",Barrier,
@@ -55,7 +55,7 @@ Data economy,pilot & feed back,2025-06-01,2025-09-01,"FDSC improvements design
 - Services contracting: Marketplace pluggings to customize policies, SLAs, multi-chain logging logics
 - Admin portal to monitor DSC state (e.g. multichain logs)",Target,
 User engagement,Lobby,2024-12-01,2025-02-01,"EU decision-makers mapping, alignment and engagement",Target,"emails, calls"
-User engagement,Lobby,2024-02-12,2024-04-12,Brussels EP mission,Milestone,
+User engagement,Lobby,2024-12-02,2024-12-04,Brussels EP mission,Milestone,
 User engagement,Lobby,2025-05-02,2025-07-02,Fresh on Track Berlin's high level meeting,Milestone,
 User engagement,Lobby,2024-12-01,2025-02-01,Lack of visual support with data-based impact from operation,Barrier,
 User engagement,Strategic Position,2024-12-01,2025-02-01,"Engagement and alignment with local administrations (cities, regions, states)",target,meetings and working exchange with technical advisers
@@ -66,10 +66,10 @@ User engagement,Strategic Position,2024-12-01,2025-05-01,"Position Paper release
 User engagement,Strategic Position,2024-12-01,2025-05-01,New target market leads,Milestone,
 User engagement,Strategic Position,2024-12-01,2025-05-01,Decision-makers agendas and narrow availability,Barrier,
 User engagement,Markets on-field visits,2025-03-24,2025-03-25,Châteaurenard 1,Target,Local on-boarding strategy
-User engagement,Markets on-field visits,2025-05-05,2025-07-05,Bologna,Target,Local on-boarding strategy
-User engagement,Markets on-field visits,2025-05-30,2025-02-06,Châteaurenard 2,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-05-05,2025-05-07,Bologna,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-05-30,2025-06-02,Châteaurenard 2,Target,Local on-boarding strategy
 User engagement,Markets on-field visits,2025-05-22,2025-05-22,Zaragoza TMZ,Target,Follow up with local administration
-User engagement,Markets on-field visits,2025-03-06,2025-04-06,Madrid new association,Target,Local on-boarding strategy
+User engagement,Markets on-field visits,2025-06-03,2025-06-04,Madrid new association,Target,Local on-boarding strategy
 User engagement,Markets on-field visits,2025-03-01,2025-06-01,"Châteaurenard, Bologna, Berlin joint road maps & offers
 New target market (Madrid)",Milestone,
 User engagement,Markets on-field visits,2025-03-01,2025-06-01,"Dynamic agendas with low availability
