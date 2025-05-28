@@ -17,8 +17,8 @@ else:
     st.stop()
 
 # Preprocesar fechas
-df['Start Date'] = pd.to_datetime(df['Start Date'])
-df['End Date'] = pd.to_datetime(df['End Date'])
+df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
+df['End Date'] = pd.to_datetime(df['End Date'], errors='coerce')
 df['Point Date'] = df['End Date'].combine_first(df['Start Date']).dt.normalize()
 df['Month'] = df['Point Date'].dt.to_period('M').dt.to_timestamp()
 months_sorted = sorted(df['Month'].unique())
@@ -127,8 +127,9 @@ for lane in swimlanes:
     if sub.empty: continue
     phases = []
     for phase, phase_df in sub.groupby('Phase'):
-        start = phase_df['Start Date'].min()
-        end = phase_df['End Date'].max()
+        # Aseguramos que los valores NaT no se cuenten para el rango
+        start = pd.to_datetime(phase_df['Start Date'], errors='coerce').min()
+        end = pd.to_datetime(phase_df['End Date'], errors='coerce').max()
         phases.append({'name': phase, 'start': start, 'end': end, 'rows': phase_df})
     phases = sorted(phases, key=lambda p: p['start'])
 
@@ -168,14 +169,14 @@ for lane in swimlanes:
             hoverinfo='skip',
             opacity=0.13
         ))
-        # Barra phase más gruesa
+        # Barra phase más gruesa y visible: azul claro con borde blanco
         BAR_HEIGHT = 0.33  # Más grueso
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end'], p['end'], p['start'], p['start']],
             y=[ypos-BAR_HEIGHT, ypos-BAR_HEIGHT, ypos+BAR_HEIGHT, ypos+BAR_HEIGHT, ypos-BAR_HEIGHT],
             fill="toself",
-            fillcolor="#0f172a",
-            line=dict(width=0),
+            fillcolor="#60a5fa",  # azul claro
+            line=dict(width=3, color="#fff"),  # borde blanco
             mode='lines',
             showlegend=False,
             hoverinfo='skip'
@@ -560,4 +561,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de ...")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando eventos en la leyenda de radar o usando los paneles de configuración.")
