@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objs as go
 import numpy as np
 from datetime import datetime
+from datetime import timedelta
 
 # ----------- CARGA DE DATOS -----------------
 st.set_page_config(layout="wide", page_title="Stakeholder Timeline Dashboard")
@@ -335,6 +336,34 @@ for event, color in color_map.items():
         hoverinfo="none"
     ))
 
+if not df_mes.empty and pd.notnull(df_mes['Start Date']).any():
+    first_start_date = df_mes['Start Date'].min()
+    first_month = first_start_date.replace(day=1)
+else:
+    first_month = None
+
+if not df_mes.empty and pd.notnull(df_mes['End Date']).any():
+    last_end_date = df_mes['End Date'].max()
+    last_month = last_end_date.replace(day=1)
+else:
+    last_month = None
+# --- AUTOSCALE X/Y AXES TO FILTERED DATA ---
+if not df_mes.empty:
+    if first_month == last_month:
+        min_x = df_mes['Start Date'].min()
+        max_x = df_mes['End Date'].max() + timedelta(days=0.2)
+        fig.update_xaxes(range=[min_x, max_x])
+        min_y = min(y_pos.values()) - 1.3 - SWIMLANE_SPACING
+        max_y = max(y_pos.values()) + 1.3 + SWIMLANE_SPACING
+        fig.update_yaxes(range=[min_y, max_y])
+    else:
+        min_x = df_mes['Start Date'].min()
+        max_x = df_mes['End Date'].max() + timedelta(days=6)
+        fig.update_xaxes(range=[min_x, max_x])
+        min_y = min(y_pos.values()) - 1.3 - SWIMLANE_SPACING
+        max_y = max(y_pos.values()) + 1.3 + SWIMLANE_SPACING
+        fig.update_yaxes(range=[min_y, max_y])
+
 min_month = df['Month'].min()
 max_month = df['Month'].max()
 all_months = pd.date_range(min_month, max_month, freq='MS')
@@ -372,7 +401,7 @@ fig.update_xaxes(
     zeroline=False,
     tickfont=dict(size=14, family="Montserrat, Arial", color="#1e293b"),
     title_font=dict(size=16, family="Montserrat, Arial", color="#1e293b"),
-    range=x_range
+    # range=x_range  # Ya lo controla el autoscale arriba
 )
 fig.update_yaxes(
     tickvals=[y_pos[lane] for lane in swimlanes],
@@ -380,7 +409,7 @@ fig.update_yaxes(
     showgrid=False,
     zeroline=False,
     showticklabels=True,
-    range=[-1.3 - SWIMLANE_SPACING, SWIMLANE_SPACING * (len(swimlanes)-1) + 1.3 + SWIMLANE_SPACING],
+    # range=[-1.3 - SWIMLANE_SPACING, SWIMLANE_SPACING * (len(swimlanes)-1) + 1.3 + SWIMLANE_SPACING],  # Ya lo controla el autoscale arriba
     ticks="",
     tickfont=dict(size=14, family="Montserrat, Arial", color="#1e293b")
 )
@@ -405,13 +434,30 @@ fig.update_layout(
     height=840,
 )
 
+plot_config = {
+    "displayModeBar": True,
+    "displaylogo": False,
+    "toImageButtonOptions": {
+        "format": "png",
+        "filename": "stakeholder_radar",
+        "height": 600,
+        "width": 800,
+        "scale": 3
+    },
+    "showTips": True,
+    "showEditInChartStudio": False,
+    "modeBarButtonsToAdd": ["togglelegend"],
+    "modeBarButtonsToRemove": ["autoscale"],  # Oculta el botón autoscale
+    "responsive": True,
+    "showlegendonfullscreen": True
+}
 
 with st.container():
     c1, c2 = st.columns([2,1.8])
 
     with c1:
         st.subheader(f"Swimlane timeline / {first_month_label} - {selected_month_label}")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config=plot_config)
 
     with c2:
         st.subheader(f"Stakeholder Involvement / {first_month_label} - {selected_month_label}")
@@ -507,24 +553,6 @@ with st.container():
             paper_bgcolor="#fff",
             plot_bgcolor="#fff"
         )
-
-        plot_config = {
-            "displayModeBar": True,
-            "displaylogo": False,
-            "toImageButtonOptions": {
-                "format": "png",
-                "filename": "stakeholder_radar",
-                "height": 600,
-                "width": 800,
-                "scale": 3
-            },
-            "showTips": True,
-            "showEditInChartStudio": False,
-            "modeBarButtonsToAdd": ["togglelegend"],
-            "modeBarButtonsToRemove": [],
-            "responsive": True,
-            "showlegendonfullscreen": True
-        }
 
         st.plotly_chart(go.Figure(data=radar_traces, layout=radar_layout), use_container_width=False, config=plot_config)
 
@@ -631,4 +659,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder, y después ajustando los roles. Puedes editar los pesos de foco estratégico también.")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder y ajustando los sliders.")
