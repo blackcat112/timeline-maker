@@ -112,11 +112,11 @@ rgba_map = {
     'Milestone': 'rgba(34,197,94,0.68)',
     'Barrier': 'rgba(239,68,68,0.68)'
 }
-swimlanes = ['User engagement', 'Logistics', 'Data economy']
+swimlanes = ['Logistics','User engagement', 'Data economy']
 
 # MÁS ESPACIO entre swimlanes y phases
 SWIMLANE_SPACING = 10
-PHASE_SLOT = 0.89
+PHASE_SLOT = 1
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
@@ -299,7 +299,7 @@ for lane in swimlanes:
                 ),
                 text=[event_emoji.get(row['Events'], '')],
                 textposition="middle center",
-                textfont=dict(size=15),
+                textfont=dict(size=19),
                 showlegend=False,
                 hovertemplate=(
                     f"<b>{row['Swimlane']}</b><br>"
