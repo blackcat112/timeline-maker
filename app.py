@@ -181,13 +181,20 @@ for lane in swimlanes:
             hoverinfo='skip',
             opacity=0.13
         ))
+        swimlane_colors = {
+            'User engagement': "#60a5fa",   # Azul
+            'Logistics': "#f59e42",         # Naranja
+            'Data economy': "#43aa8b"       # Verde
+        }
+
         # Barra phase más grueso
         BAR_HEIGHT = 0.33
+        color_swimlane = swimlane_colors.get(lane, "#60a5fa")  # Azul por defecto si no está
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end'], p['end'], p['start'], p['start']],
             y=[ypos-BAR_HEIGHT, ypos-BAR_HEIGHT, ypos+BAR_HEIGHT, ypos+BAR_HEIGHT, ypos-BAR_HEIGHT],
             fill="toself",
-            fillcolor="#60a5fa",
+            fillcolor=color_swimlane,
             line=dict(width=3, color="#000000"),
             mode='lines',
             showlegend=False,
