@@ -261,7 +261,7 @@ for lane in swimlanes:
         else:
             max_angle = 0.57
             angles = [-max_angle + 2 * max_angle * i / (n_ev - 1) for i in range(n_ev)]
-        event_length = 0.56
+        event_length = 0.95
         base_x = p['start'] + (p['end'] - p['start']) / 2
         base_y = ypos
         for (ev_idx, (irow, row)), angle in zip(enumerate(events), angles):
