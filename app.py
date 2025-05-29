@@ -116,10 +116,11 @@ swimlanes = ['Logistics','User engagement', 'Data economy']
 
 # MÁS ESPACIO entre swimlanes y phases
 SWIMLANE_SPACING = 10
-PHASE_SLOT = 1
+PHASE_SLOT = 1.2
 
 y_pos = {lane: i * SWIMLANE_SPACING for i, lane in enumerate(swimlanes)}
 phase_ypos = dict()
+
 
 fig = go.Figure()
 
@@ -188,7 +189,7 @@ for lane in swimlanes:
         }
 
         # Barra phase más grueso
-        BAR_HEIGHT = 0.33
+        BAR_HEIGHT = 0.55
         color_swimlane = swimlane_colors.get(lane, "#60a5fa")  # Azul por defecto si no está
         fig.add_trace(go.Scatter(
             x=[p['start'], p['end'], p['end'], p['start'], p['start']],
@@ -571,9 +572,10 @@ with st.container():
             if cw_key not in st.session_state:
                 st.session_state[cw_key] = {}
 
-            # 1. Selecciona una fase
-            selected_phase = st.selectbox("Selecciona una fase", options=[''] + phases, key="config_select_phase")
-            if selected_phase:
+            # Usa la fase seleccionada en el radar directamente
+            if selected_radar_phase:
+                selected_phase = selected_radar_phase
+                st.info(f"Editando para la fase: **{selected_phase}**")
                 # 2. Selecciona un stakeholder
                 selected_stakeholder = st.selectbox("Selecciona un stakeholder", options=[''] + stakeholder_entities, key="config_select_stakeholder")
                 if selected_stakeholder:
@@ -610,6 +612,7 @@ with st.container():
                     if st.button("Cerrar", key="cerrar_sin_stakeholder"):
                         st.session_state["show_config_panel"] = False
             else:
+                st.warning("Selecciona una fase en el radar para editar los stakeholders.")
                 if st.button("Cerrar", key="cerrar_sin_phase"):
                     st.session_state["show_config_panel"] = False
 
@@ -666,4 +669,4 @@ with st.container():
             st.info("Sin datos de foco estratégico para este mes.")
 
 st.markdown("---")
-st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase, luego el stakeholder, y ajustando los sliders. Los valores quedan guardados para el filtro de mes y fase seleccionados.")
+st.caption("Dashboard profesional, powered by Streamlit + Plotly. Cambia el mes a la izquierda para explorar. Puedes editar las aportaciones de los stakeholders seleccionando primero la fase en el radar, luego el stakeholder, y ajustando los pesos.")
